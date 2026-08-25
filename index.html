@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awon &amp; Sutra — Monthly Forecast Console</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+
+<style>
+:root{
+  --brand:#1D4A4F; --brand-deep:#123236; --brand-mid:#2E6B6F; --brand-tint:#DCE8E7; --brand-wash:#EEF4F3;
+  --sutra:#A2643A; --sutra-tint:#F1E6DA;
+  --paper:#F3F2ED; --card:#FFFFFF; --ink:#16211F; --dim:#63706E; --rule:#D5D8D2;
+  --input:#FFF6E3; --input-line:#E0C98C; --alert:#A33A1E; --ok:#2E6B4F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:14px;line-height:1.45;padding-bottom:64px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+/* ---------- masthead ---------- */
+header.mast{background:var(--brand);color:#fff;padding:20px 26px;display:flex;flex-wrap:wrap;gap:20px;
+  align-items:center;justify-content:space-between}
+.lockup{display:flex;align-items:center;gap:16px}
+.mark{width:56px;height:56px;flex:none}
+.lockup h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.12em;line-height:1}
+.lockup .ar{font-size:22px;letter-spacing:0;opacity:.85;margin-bottom:2px}
+.lockup .sub{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  opacity:.7;margin-top:6px}
+.mhright{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.field input{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 10px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.1);color:#fff;border-radius:3px;width:160px}
+.field input::placeholder{color:rgba(255,255,255,.5)}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  background:#fff;color:var(--brand);border:none;padding:12px 18px;border-radius:3px;cursor:pointer;font-weight:600;
+  transition:transform .12s ease,box-shadow .2s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-weight:400}
+.btn.ghost:hover{background:rgba(255,255,255,.12)}
+.btn.line{background:transparent;color:var(--brand);border:1px solid var(--rule)}
+.btn.line:hover{background:var(--brand);color:#fff}
+#toast{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 12px;background:rgba(255,255,255,.15);
+  border-left:3px solid #fff;align-self:center;display:none}
+
+/* ---------- readout ---------- */
+.readout{background:var(--brand-deep);color:#fff;padding:24px 26px 26px}
+.kg{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(36px,6.5vw,66px);letter-spacing:-.03em;line-height:1}
+.kg small{font-size:.26em;letter-spacing:.2em;opacity:.6;margin-left:10px}
+.readline{font-family:'IBM Plex Mono',monospace;font-size:12.5px;opacity:.72;margin-top:6px}
+.bar{display:flex;height:14px;margin-top:18px;border-radius:2px;overflow:hidden;background:rgba(255,255,255,.12)}
+.seg{transition:width .45s cubic-bezier(.4,0,.2,1);border-right:1px solid var(--brand-deep)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:11px;font-family:'IBM Plex Mono',monospace;opacity:.85}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:1px}
+
+/* ---------- kpis ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--rule)}
+.kpi{background:var(--card);padding:13px 16px}
+.kpi b{display:block;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;margin-top:4px}
+
+/* ---------- tabs ---------- */
+nav.tabs{display:flex;padding:0 26px;background:var(--card);border-bottom:1px solid var(--rule);flex-wrap:wrap;
+  position:sticky;top:0;z-index:20}
+.tab{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:none;border-bottom:3px solid transparent;padding:14px 18px;cursor:pointer;color:var(--dim)}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.tab.on.sutra{color:var(--sutra);border-bottom-color:var(--sutra)}
+
+/* ---------- panels ---------- */
+.panel{padding:26px;display:none}
+.panel.on{display:block}
+.sec{margin-bottom:34px}
+.sec h3{font-size:17px;font-weight:700;margin:2px 0 3px}
+.sec p.note{font-size:12.5px;color:var(--dim);margin:0 0 14px;max-width:78ch}
+.scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--card);border-radius:3px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:#fff;
+  font-weight:500;text-align:right;padding:9px 8px;background:var(--brand);white-space:nowrap;vertical-align:bottom}
+.sutra th{background:var(--sutra)}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;z-index:2}
+th:first-child{background:var(--brand)} .sutra th:first-child{background:var(--sutra)}
+td:first-child{background:var(--card);border-right:1px solid var(--rule);font-weight:600;padding:7px 8px}
+td{padding:0;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+td.calc{padding:7px 8px;font-family:'IBM Plex Mono',monospace}
+td.calc.soft{color:var(--dim)}
+tbody tr:nth-child(even) td{background:var(--brand-wash)}
+tbody tr:nth-child(even) td:first-child{background:var(--brand-wash)}
+tr.total td{background:var(--brand-deep)!important;color:#fff;font-weight:600;padding:8px;
+  font-family:'IBM Plex Mono',monospace;border-bottom:none}
+.sutra tr.total td{background:#6E4426!important}
+input.cell{width:100%;min-width:78px;border:none;background:var(--input);padding:7px 8px;text-align:right;
+  font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink);box-shadow:inset 0 -1px 0 var(--input-line)}
+input.cell:focus{outline:2px solid var(--brand);outline-offset:-2px;background:#fff}
+.sutra input.cell:focus{outline-color:var(--sutra)}
+input.cell.text{text-align:left;min-width:150px}
+select.cell{width:100%;min-width:150px;border:none;background:var(--input);padding:6px 8px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--ink);box-shadow:inset 0 -1px 0 var(--input-line)}
+.rm{border:none;background:none;color:var(--dim);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:15px;padding:4px 9px}
+.rm:hover{color:var(--alert)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.summary div{background:var(--card);padding:13px 15px}
+.summary b{display:block;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;margin-top:4px}
+.summary div.hl{background:var(--brand-tint)}
+.summary div.hls{background:var(--sutra-tint)}
+.flag{font-size:12.5px;background:var(--card);border-left:3px solid var(--alert);padding:11px 14px;margin-top:12px;border-radius:0 3px 3px 0}
+.legendkey{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin:10px 0 0}
+.legendkey i{display:inline-block;width:11px;height:11px;margin-right:6px;border:1px solid var(--input-line);
+  background:var(--input);vertical-align:-1px}
+@media (max-width:640px){header.mast,.panel,.readout{padding:16px}nav.tabs{padding:0 8px}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="lockup">
+    <svg class="mark" viewBox="0 0 56 56" aria-label="Awon">
+      <circle cx="28" cy="28" r="28" fill="#fff"/>
+      <path d="M14 25 C14 38, 42 38, 42 25" fill="none" stroke="#1D4A4F" stroke-width="5.5" stroke-linecap="round"/>
+      <path d="M17 17.5 C22 14, 34 14, 39 17.5" fill="none" stroke="#1D4A4F" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="ar">عون</div>
+      <h1>AWON</h1>
+      <div class="sub">&amp; Sutra · monthly forecast console</div>
+    </div>
+  </div>
+  <div class="mhright">
+    <div id="toast"></div>
+    <div class="field">
+      <label>Forecast month</label>
+      <input id="monthLabel" value="August 2026">
+    </div>
+    <button class="btn ghost" id="resetBtn">Reset to Aug 26</button>
+    <button class="btn" id="exportBtn">Download Excel</button>
+  </div>
+</header>
+
+<section class="readout">
+  <div class="eyebrow" style="color:rgba(255,255,255,.6)">Combined expected collection</div>
+  <div class="kg" id="kgTotal">—<small>KG</small></div>
+  <div class="readline" id="readline"></div>
+  <div class="bar" id="cityBar"></div>
+  <div class="legend" id="cityLegend"></div>
+</section>
+
+<div class="kpis" id="kpis"></div>
+
+<nav class="tabs">
+  <button class="tab on" data-tab="awon">Awon inputs</button>
+  <button class="tab" data-tab="sutra">Sutra inputs</button>
+  <button class="tab" data-tab="overhead">Overhead costs</button>
+  <button class="tab" data-tab="combined">Combined view</button>
+</nav>
+
+<div class="panel on" id="panel-awon"></div>
+<div class="panel sutra" id="panel-sutra"></div>
+<div class="panel" id="panel-overhead"></div>
+<div class="panel" id="panel-combined"></div>
+
+<script>
+// ==== MODEL START ==========================================================
+
+const AWON_BASE = {
+  daysInMonth: 31,
+  cities: [
+    { id:1, city:"Riyadh",  drivers:15, days:27, paidPerDriver:1800, paidCPL:5.6, organicLeads:2750, brandMult:2.7, waLeads:5500, waMult:1.6, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:23, carCap:700 },
+    { id:2, city:"Jeddah",  drivers:9,  days:27, paidPerDriver:1700, paidCPL:5.4, organicLeads:1500, brandMult:2.7, waLeads:2800, waMult:1.6, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:22, carCap:550 },
+    { id:3, city:"Mecca",   drivers:2,  days:27, paidPerDriver:1600, paidCPL:5.2, organicLeads:100,  brandMult:1.9, waLeads:150,  waMult:1.4, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.75, wpp:24, carCap:700 },
+    { id:4, city:"Taif",    drivers:1,  days:27, paidPerDriver:1800, paidCPL:5.2, organicLeads:100,  brandMult:1.9, waLeads:50,   waMult:1.4, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:20, carCap:700 },
+    { id:5, city:"Madina",  drivers:4,  days:27, paidPerDriver:2100, paidCPL:5.2, organicLeads:500,  brandMult:1.9, waLeads:1100, waMult:1.4, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:24, carCap:600 },
+    { id:6, city:"Sharqia", drivers:5,  days:27, paidPerDriver:2000, paidCPL:5.2, organicLeads:500,  brandMult:2.2, waLeads:1200, waMult:1.4, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:28, carCap:750 },
+    { id:7, city:"Asir",    drivers:2,  days:27, paidPerDriver:1500, paidCPL:5.2, organicLeads:300,  brandMult:2.2, waLeads:400,  waMult:1.4, ogBudget:0, ogLeads:0, affBudget:0, affLeads:0, pickupRate:0.85, wpp:26, carCap:600 }
+  ]
+};
+
+const SUTRA_BASE = {
+  daysInMonth: 31,
+  cities: [
+    { id:1, city:"Riyadh", drivers:1, days:26, paidBudget:2200, paidCPL:5.8, organicLeads:250, brandMult:2.5, waLeads:35, waMult:2, pickupRate:0.7, wpp:22, carCap:700 },
+    { id:2, city:"Jeddah", drivers:1, days:26, paidBudget:2200, paidCPL:5.8, organicLeads:250, brandMult:2.5, waLeads:35, waMult:2, pickupRate:0.7, wpp:21, carCap:550 },
+    { id:3, city:"Madina", drivers:1, days:26, paidBudget:2200, paidCPL:5.8, organicLeads:250, brandMult:2.5, waLeads:35, waMult:2, pickupRate:0.7, wpp:24, carCap:600 }
+  ]
+};
+
+const OH_TYPES = ["Content production","UGC / IGC","SEO","Software & tools","Education & training",
+  "R&D — market research","On-ground activation","Contests & gifts","Out-of-home / in-mall",
+  "Agency & freelance fees","Influencers & partnerships","Other"];
+
+const OVERHEAD_BASE = [
+  { id:1,  type:"UGC / IGC",              item:"Creator content pool",        total:2650, awonPct:0.5  },
+  { id:2,  type:"SEO",                    item:"Technical SEO retainer",      total:450,  awonPct:0.85 },
+  { id:3,  type:"Software & tools",       item:"Licenses & dev",              total:1000, awonPct:0.85 },
+  { id:4,  type:"Education & training",   item:"Team training",               total:0,    awonPct:0.85 },
+  { id:5,  type:"R&D — market research",  item:"Market research",             total:0,    awonPct:0.85 },
+  { id:6,  type:"Content production",     item:"Production of monthly content", total:2000, awonPct:0.5 },
+  { id:7,  type:"Out-of-home / in-mall",  item:"In-mall screens / seasons",   total:0,    awonPct:0.85 },
+  { id:8,  type:"Agency & freelance fees",item:"Content writing agencies",    total:0,    awonPct:0.85 },
+  { id:9,  type:"Contests & gifts",       item:"Contest gifts",               total:1000, awonPct:0    },
+  { id:10, type:"On-ground activation",   item:"On-ground activation",        total:1200, awonPct:1    }
+];
+
+const AWON_COLS = [
+  { key:"city", label:"City", type:"text" },
+  { key:"drivers", label:"Drivers", step:1, agg:"sum", fmt:"n0" },
+  { key:"days", label:"Days of op.", step:1, agg:"avg", fmt:"n0" },
+  { key:"paidPerDriver", label:"Paid $ / driver", step:50, agg:"wavg", w:"drivers", fmt:"m0" },
+  { key:"paidCPL", label:"Paid CPL $", step:0.1, agg:"blendPaidCPL", fmt:"m2" },
+  { key:"organicLeads", label:"Organic leads", step:10, agg:"sum", fmt:"n0" },
+  { key:"brandMult", label:"Branding $ / org. lead", step:0.1, agg:"blendBrand", fmt:"m2" },
+  { key:"waLeads", label:"WA leads", step:10, agg:"sum", fmt:"n0" },
+  { key:"waMult", label:"WA $ / lead", step:0.1, agg:"blendWa", fmt:"m2" },
+  { key:"ogBudget", label:"On-ground $", step:100, agg:"sum", fmt:"m0" },
+  { key:"ogLeads", label:"On-ground leads", step:10, agg:"sum", fmt:"n0" },
+  { key:"affBudget", label:"Affiliate $", step:100, agg:"sum", fmt:"m0" },
+  { key:"affLeads", label:"Affiliate leads", step:10, agg:"sum", fmt:"n0" },
+  { key:"pickupRate", label:"Pickup rate", step:0.01, agg:"blendPickup", fmt:"pc" },
+  { key:"wpp", label:"Avg kg / pickup", step:0.5, agg:"blendWpp", fmt:"n1" },
+  { key:"carCap", label:"Car capacity kg", step:50, agg:"avg", fmt:"n0" }
+];
+
+const SUTRA_COLS = [
+  { key:"city", label:"City", type:"text" },
+  { key:"drivers", label:"Drivers", step:1, agg:"sum", fmt:"n0" },
+  { key:"days", label:"Days of op.", step:1, agg:"avg", fmt:"n0" },
+  { key:"paidBudget", label:"Paid budget $", step:100, agg:"sum", fmt:"m0" },
+  { key:"paidCPL", label:"Paid CPL $", step:0.1, agg:"blendPaidCPL", fmt:"m2" },
+  { key:"organicLeads", label:"Organic leads", step:10, agg:"sum", fmt:"n0" },
+  { key:"brandMult", label:"Branding $ / org. lead", step:0.1, agg:"blendBrand", fmt:"m2" },
+  { key:"waLeads", label:"WA leads", step:5, agg:"sum", fmt:"n0" },
+  { key:"waMult", label:"WA $ / lead", step:0.1, agg:"blendWa", fmt:"m2" },
+  { key:"pickupRate", label:"Pickup rate", step:0.01, agg:"blendPickup", fmt:"pc" },
+  { key:"wpp", label:"Avg kg / pickup", step:0.5, agg:"blendWpp", fmt:"n1" },
+  { key:"carCap", label:"Car capacity kg", step:50, agg:"avg", fmt:"n0" }
+];
+
+const div = (a,b) => (b ? a/b : 0);
+
+function calcAwonCity(c, daysInMonth){
+  const paidBudget = c.paidPerDriver * c.drivers;
+  const paidLeads = div(paidBudget, c.paidCPL);
+  const brandingBudget = c.organicLeads * c.brandMult;
+  const waBudget = c.waLeads * c.waMult;
+  const budget = paidBudget + brandingBudget + waBudget + c.ogBudget + c.affBudget;
+  const leads = paidLeads + c.organicLeads + c.waLeads + c.ogLeads + c.affLeads;
+  const leadsPerDriverDay = div(div(leads, c.days), c.drivers);
+  const pickupsPerDriverDay = leadsPerDriverDay * c.pickupRate;
+  const pickups = pickupsPerDriverDay * c.days * c.drivers;
+  const weight = pickups * c.wpp;
+  const dailyWeight = div(weight, c.days);
+  return { ...c, paidBudget, paidLeads, brandingBudget, waBudget, budget, leads,
+    dailyLeads: div(leads, daysInMonth), leadsPerDriverDay, pickupsPerDriverDay, pickups, weight, dailyWeight,
+    cpl: div(budget, leads), cpk: div(budget, weight), cac: div(budget, pickups),
+    carUse: div(div(dailyWeight, c.drivers), c.carCap) };
+}
+
+function calcSutraCity(c, daysInMonth){
+  const paidLeads = div(c.paidBudget, c.paidCPL);
+  const brandingBudget = c.organicLeads * c.brandMult;
+  const waBudget = c.waLeads * c.waMult;
+  const budget = c.paidBudget + brandingBudget + waBudget;
+  const leads = paidLeads + c.organicLeads + c.waLeads;
+  const leadsPerDriverDay = div(div(leads, c.days), c.drivers);
+  const pickupsPerDriverDay = leadsPerDriverDay * c.pickupRate;
+  const pickups = pickupsPerDriverDay * c.days * c.drivers;
+  const weight = pickups * c.wpp;
+  const dailyWeight = div(weight, c.days);
+  return { ...c, paidBudget:c.paidBudget, paidLeads, brandingBudget, waBudget, budget, leads,
+    dailyLeads: div(leads, daysInMonth), leadsPerDriverDay, pickupsPerDriverDay, pickups, weight, dailyWeight,
+    cpl: div(budget, leads), cpk: div(budget, weight), cac: div(budget, pickups),
+    carUse: div(div(dailyWeight, c.drivers), c.carCap) };
+}
+
+// Overhead lands on each city by its share of that brand's fleet:
+// city spend = city direct budget + overhead x (city drivers / brand drivers)
+function rollUp(rows, overhead, daysInMonth){
+  const s = k => rows.reduce((a,r)=>a+(r[k]||0),0);
+  const drivers = s("drivers"), leads = s("leads"), pickups = s("pickups"),
+        weight = s("weight"), budget = s("budget");
+  const days = rows.length ? s("days")/rows.length : 0;
+  const spend = budget + overhead;
+  rows.forEach(r=>{
+    r.driverShare = div(r.drivers, drivers);
+    r.ohShare = overhead * r.driverShare;
+    r.spend = r.budget + r.ohShare;
+    r.allInCPL = div(r.spend, r.leads);
+    r.allInCAC = div(r.spend, r.pickups);
+    r.allInCPK = div(r.spend, r.weight);
+    r.dailySpend = div(r.spend, daysInMonth);
+  });
+  return { rows, drivers, days, leads, pickups, weight, budget, overhead, spend, daysInMonth,
+    paidBudget:s("paidBudget"), paidLeads:s("paidLeads"), brandingBudget:s("brandingBudget"),
+    organicLeads:s("organicLeads"), waBudget:s("waBudget"), waLeads:s("waLeads"),
+    ogBudget:s("ogBudget"), ogLeads:s("ogLeads"), affBudget:s("affBudget"), affLeads:s("affLeads"),
+    dailyLeads: div(leads, daysInMonth), dailyWeight: s("dailyWeight"), wpp: div(weight, pickups),
+    carCapAvg: rows.length ? s("carCap")/rows.length : 0,
+    leadsPerDriverDay: div(div(leads, days), drivers),
+    pickupsPerDriverDay: div(div(pickups, days), drivers),
+    directCPL: div(budget, leads), directCAC: div(budget, pickups), directCPK: div(budget, weight),
+    paidCPL: div(s("paidBudget"), s("paidLeads")), paidPerDriver: div(s("paidBudget"), drivers),
+    brandMult: div(s("brandingBudget"), s("organicLeads")), waMult: div(s("waBudget"), s("waLeads")),
+    allInCPL: div(spend, leads), allInCAC: div(spend, pickups), allInCPK: div(spend, weight),
+    pickupRate: div(pickups, leads), kgPerLead: div(weight, leads) };
+}
+
+const n0 = v => isFinite(v) ? Math.round(v).toLocaleString("en-US") : "—";
+const n1 = v => isFinite(v) ? v.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1}) : "—";
+const m0 = v => isFinite(v) ? "$"+Math.round(v).toLocaleString("en-US") : "—";
+const m2 = v => isFinite(v) ? "$"+v.toFixed(2) : "—";
+const m3 = v => isFinite(v) ? "$"+v.toFixed(3) : "—";
+const pc = v => isFinite(v) ? (v*100).toFixed(1)+"%" : "—";
+const FMT = { n0, n1, m0, m2, m3, pc };
+
+function aggregate(col, calc){
+  switch(col.agg){
+    case "sum": return calc[col.key] !== undefined ? calc[col.key] : calc.rows.reduce((a,r)=>a+(r[col.key]||0),0);
+    case "avg": return calc.rows.length ? calc.rows.reduce((a,r)=>a+(r[col.key]||0),0)/calc.rows.length : 0;
+    case "wavg": return div(calc.rows.reduce((a,r)=>a+(r[col.key]||0)*(r[col.w]||0),0), calc.rows.reduce((a,r)=>a+(r[col.w]||0),0));
+    case "blendPaidCPL": return calc.paidCPL;
+    case "blendBrand": return calc.brandMult;
+    case "blendWa": return calc.waMult;
+    case "blendPickup": return calc.pickupRate;
+    case "blendWpp": return calc.wpp;
+    default: return null;
+  }
+}
+
+// ==== MODEL END ============================================================
+
+// ---- state ----
+let awon = JSON.parse(JSON.stringify(AWON_BASE));
+let sutra = JSON.parse(JSON.stringify(SUTRA_BASE));
+let overhead = JSON.parse(JSON.stringify(OVERHEAD_BASE));
+let monthLabel = "August 2026";
+let A, S, C, ohAwon, ohSutra;
+
+function compute(){
+  ohAwon = overhead.reduce((a,r)=>a+r.total*r.awonPct, 0);
+  ohSutra = overhead.reduce((a,r)=>a+r.total*(1-r.awonPct), 0);
+  A = rollUp(awon.cities.map(c=>calcAwonCity(c, awon.daysInMonth)), ohAwon, awon.daysInMonth);
+  S = rollUp(sutra.cities.map(c=>calcSutraCity(c, sutra.daysInMonth)), ohSutra, sutra.daysInMonth);
+  const spend=A.spend+S.spend, leads=A.leads+S.leads, pickups=A.pickups+S.pickups, weight=A.weight+S.weight;
+  C = { spend, leads, pickups, weight, budget:A.budget+S.budget, overhead:A.overhead+S.overhead,
+        drivers:A.drivers+S.drivers, cpl:div(spend,leads), cac:div(spend,pickups), cpk:div(spend,weight),
+        pickupRate:div(pickups,leads), kgPerLead:div(weight,leads) };
+}
+
+// ---- render helpers ----
+const el = (h) => { const d=document.createElement("div"); d.innerHTML=h.trim(); return d.firstElementChild; };
+const esc = (s) => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderTop(){
+  document.getElementById("kgTotal").innerHTML = n0(C.weight) + "<small>KG</small>";
+  document.getElementById("readline").textContent =
+    `${m0(C.spend)} spend · ${n0(C.leads)} leads · ${n0(C.pickups)} pickups · ${m3(C.cpk)} per kg`;
+
+  const bars = [...A.rows.map(r=>({name:r.city, kg:r.weight, brand:"awon"})),
+                ...S.rows.map(r=>({name:r.city+" · Sutra", kg:r.weight, brand:"sutra"}))]
+                .sort((a,b)=>b.kg-a.kg);
+  document.getElementById("cityBar").innerHTML = bars.map((b,i)=>{
+    const col = b.brand==="awon" ? `rgba(220,232,231,${1-i*0.075})` : `rgba(162,100,58,${1-i*0.05})`;
+    return `<div class="seg" style="width:${div(b.kg,C.weight)*100}%;background:${col}" title="${esc(b.name)}: ${n0(b.kg)} kg"></div>`;
+  }).join("");
+  document.getElementById("cityLegend").innerHTML = bars.slice(0,7).map(b=>
+    `<span><i style="background:${b.brand==="awon"?"#DCE8E7":"#A2643A"}"></i>${esc(b.name)} ${pc(div(b.kg,C.weight))}</span>`).join("");
+
+  document.getElementById("kpis").innerHTML = [
+    ["Total spend", m0(C.spend)], ["Leads", n0(C.leads)], ["Pickups", n0(C.pickups)],
+    ["Pickup rate", pc(C.pickupRate)], ["CPL", m2(C.cpl)], ["CAC", m2(C.cac)],
+    ["CPK", m3(C.cpk)], ["kg / lead", n1(C.kgPerLead)]
+  ].map(([l,v])=>`<div class="kpi"><span class="eyebrow">${l}</span><b>${v}</b></div>`).join("");
+}
+
+function inputTable(who, cols, state, calc){
+  const head = `<tr>${cols.map(c=>`<th>${c.label}</th>`).join("")}<th></th></tr>`;
+  const body = state.cities.map(c=>`<tr>${cols.map(col=>
+      `<td><input class="cell${col.type==="text"?" text":""}" type="${col.type==="text"?"text":"number"}"
+        ${col.step?`step="${col.step}"`:""} value="${esc(c[col.key])}"
+        data-who="${who}" data-id="${c.id}" data-key="${col.key}"></td>`).join("")}
+      <td><button class="rm" data-rm="${who}" data-id="${c.id}">×</button></td></tr>`).join("");
+  const totals = `<tr class="total">${cols.map((col,i)=>{
+      if(i===0) return `<td>Total / blended</td>`;
+      const v = aggregate(col, calc);
+      return `<td>${v===null?"":FMT[col.fmt](v)}</td>`;
+    }).join("")}<td></td></tr>`;
+  return `<div class="scroll"><table><thead>${head}</thead><tbody>${body}${totals}</tbody></table></div>`;
+}
+
+function outputTable(calc){
+  const head = `<tr><th>City</th><th>Direct budget</th><th>Overhead share</th><th>City spend</th><th>Leads</th>
+    <th>Leads / driver / day</th><th>Pickups</th><th>Weight kg</th><th>Daily kg</th><th>Car use</th>
+    <th>CPL</th><th>CAC</th><th>CPK</th></tr>`;
+  const body = calc.rows.map(r=>`<tr>
+      <td>${esc(r.city)}</td>
+      <td class="calc">${m0(r.budget)}</td>
+      <td class="calc soft">${m0(r.ohShare)} <span style="opacity:.6">(${pc(r.driverShare)})</span></td>
+      <td class="calc">${m0(r.spend)}</td>
+      <td class="calc">${n0(r.leads)}</td>
+      <td class="calc soft">${n1(r.leadsPerDriverDay)}</td>
+      <td class="calc">${n0(r.pickups)}</td>
+      <td class="calc">${n0(r.weight)}</td>
+      <td class="calc soft">${n0(r.dailyWeight)}</td>
+      <td class="calc" style="${r.carUse>1?"color:var(--alert);font-weight:600":""}">${pc(r.carUse)}</td>
+      <td class="calc">${m2(r.allInCPL)}</td>
+      <td class="calc">${m2(r.allInCAC)}</td>
+      <td class="calc">${m3(r.allInCPK)}</td></tr>`).join("");
+  const tot = `<tr class="total"><td>Total / avg</td><td>${m0(calc.budget)}</td><td>${m0(calc.overhead)}</td>
+    <td>${m0(calc.spend)}</td><td>${n0(calc.leads)}</td><td>${n1(calc.leadsPerDriverDay)}</td>
+    <td>${n0(calc.pickups)}</td><td>${n0(calc.weight)}</td><td>${n0(calc.dailyWeight)}</td><td>—</td>
+    <td>${m2(calc.allInCPL)}</td><td>${m2(calc.allInCAC)}</td><td>${m3(calc.allInCPK)}</td></tr>`;
+  return `<div class="scroll"><table><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`;
+}
+
+function entityPanel(who, label, calc, cols, state){
+  const cls = who==="sutra" ? "hls" : "hl";
+  const overCap = calc.rows.filter(r=>r.carUse>1).map(r=>r.city);
+  return `
+  <div class="sec">
+    <div class="eyebrow">${label} · inputs</div>
+    <h3>${label} media plan by city</h3>
+    <p class="note">${who==="awon"
+      ? "Paid budget is driver-led: paid $ per driver × drivers. Branding and WhatsApp budgets are lead-led: leads × cost per lead."
+      : "Paid budget is entered directly per city. Branding and WhatsApp budgets are lead-led: leads × cost per lead."}</p>
+    <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+      <div class="field" style="color:var(--dim)">
+        <label style="opacity:1">Days in month</label>
+        <input class="mono" type="number" id="dim-${who}" value="${state.daysInMonth}"
+          style="width:100px;background:var(--input);border:1px solid var(--input-line);color:var(--ink)">
+      </div>
+      <button class="btn line" data-add="${who}">Add city</button>
+    </div>
+    ${inputTable(who, cols, state, calc)}
+    <div class="legendkey"><span><i></i>Shaded cells are inputs — everything else is calculated.</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="eyebrow">${label} · output by city</div>
+    <h3>What the plan produces, overhead included</h3>
+    <p class="note">Overhead is pushed down to each city on its share of ${label}'s fleet, then CPL, CAC and CPK are struck on the city's full spend.</p>
+    ${outputTable(calc)}
+    ${overCap.length ? `<div class="flag"><b>Fleet check.</b> ${overCap.join(", ")} needs more kg per car per day than the
+      stated capacity allows. Add a driver, lower the kg-per-pickup assumption, or raise capacity.</div>` : ""}
+  </div>
+
+  <div class="sec">
+    <div class="eyebrow">${label} · executive summary</div>
+    <h3>All-in economics</h3>
+    <div class="summary">
+      <div class="${cls}"><span class="eyebrow">Direct budget</span><b>${m0(calc.budget)}</b></div>
+      <div class="${cls}"><span class="eyebrow">Overhead share</span><b>${m0(calc.overhead)}</b></div>
+      <div class="${cls}"><span class="eyebrow">Total spending</span><b>${m0(calc.spend)}</b></div>
+      <div><span class="eyebrow">Paid CPL</span><b>${m2(calc.paidCPL)}</b></div>
+      <div><span class="eyebrow">Marketing CPL</span><b>${m2(calc.allInCPL)}</b></div>
+      <div><span class="eyebrow">CAC</span><b>${m2(calc.allInCAC)}</b></div>
+      <div><span class="eyebrow">CPK</span><b>${m3(calc.allInCPK)}</b></div>
+      <div><span class="eyebrow">Pickup rate</span><b>${pc(calc.pickupRate)}</b></div>
+      <div><span class="eyebrow">kg per lead</span><b>${n1(calc.kgPerLead)}</b></div>
+      <div><span class="eyebrow">Drivers</span><b>${n0(calc.drivers)}</b></div>
+      <div><span class="eyebrow">Total leads</span><b>${n0(calc.leads)}</b></div>
+      <div><span class="eyebrow">Target weight</span><b>${n0(calc.weight)} kg</b></div>
+    </div>
+  </div>`;
+}
+
+function overheadPanel(){
+  const rows = overhead.map(r=>`<tr>
+    <td><select class="cell" data-oh="${r.id}" data-key="type">
+      ${OH_TYPES.map(t=>`<option ${t===r.type?"selected":""}>${t}</option>`).join("")}</select></td>
+    <td><input class="cell text" data-oh="${r.id}" data-key="item" value="${esc(r.item)}"></td>
+    <td><input class="cell" type="number" step="50" data-oh="${r.id}" data-key="total" value="${r.total}"></td>
+    <td><input class="cell" type="number" step="0.05" min="0" max="1" data-oh="${r.id}" data-key="awonPct" value="${r.awonPct}"></td>
+    <td class="calc">${m0(r.total*r.awonPct)}</td>
+    <td class="calc">${m0(r.total*(1-r.awonPct))}</td>
+    <td><button class="rm" data-ohrm="${r.id}">×</button></td></tr>`).join("");
+
+  const byType = {};
+  overhead.forEach(r=>{ byType[r.type] = (byType[r.type]||0) + r.total; });
+  const typeRows = Object.entries(byType).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([t,v])=>
+    `<tr><td>${esc(t)}</td><td class="calc">${m0(v)}</td><td class="calc soft">${pc(div(v, ohAwon+ohSutra))}</td></tr>`).join("");
+
+  return `
+  <div class="sec">
+    <div class="eyebrow">Shared cost pool</div>
+    <h3>Marketing overhead costs</h3>
+    <p class="note">Pick a cost type, name the line item, set the budget, then set how much of it belongs to Awon.
+      Sutra takes the remainder. Each brand's share is then spread across its cities on driver share.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Cost type</th><th>Line item</th><th>Budget</th><th>Awon share</th><th>Awon $</th><th>Sutra $</th><th></th></tr></thead>
+      <tbody>${rows}
+        <tr class="total"><td>Total</td><td></td><td>${m0(ohAwon+ohSutra)}</td>
+          <td>${pc(div(ohAwon, ohAwon+ohSutra))}</td><td>${m0(ohAwon)}</td><td>${m0(ohSutra)}</td><td></td></tr>
+      </tbody></table></div>
+    <div style="margin-top:12px"><button class="btn line" id="addOh">Add cost line</button></div>
+    <div class="flag"><b>Changed from the workbook.</b> The August 2026 tab hardcoded several rows, so the Awon and Sutra
+      columns summed to $8,300 against a stated total of $7,600, and Sutra's share never reached the Sutra sheet.
+      Here the share % drives both columns and Sutra's overhead flows into its own CPL, CAC and CPK.</div>
+  </div>
+
+  <div class="sec">
+    <div class="eyebrow">Pool composition</div>
+    <h3>Where the overhead sits by type</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Cost type</th><th>Budget</th><th>Share of pool</th></tr></thead>
+      <tbody>${typeRows || `<tr><td>No overhead entered</td><td class="calc">—</td><td class="calc">—</td></tr>`}</tbody>
+    </table></div>
+  </div>
+
+  <div class="sec">
+    <div class="eyebrow">Landing point</div>
+    <h3>Overhead pushed down to cities</h3>
+    <p class="note">Driver share within each brand decides who carries what.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>City</th><th>Brand</th><th>Drivers</th><th>Driver share</th><th>Overhead carried</th><th>Direct budget</th><th>City spend</th></tr></thead>
+      <tbody>
+        ${A.rows.map(r=>`<tr><td>${esc(r.city)}</td><td class="calc soft">Awon</td><td class="calc soft">${n0(r.drivers)}</td>
+          <td class="calc soft">${pc(r.driverShare)}</td><td class="calc">${m0(r.ohShare)}</td>
+          <td class="calc soft">${m0(r.budget)}</td><td class="calc">${m0(r.spend)}</td></tr>`).join("")}
+        ${S.rows.map(r=>`<tr><td>${esc(r.city)}</td><td class="calc soft">Sutra</td><td class="calc soft">${n0(r.drivers)}</td>
+          <td class="calc soft">${pc(r.driverShare)}</td><td class="calc">${m0(r.ohShare)}</td>
+          <td class="calc soft">${m0(r.budget)}</td><td class="calc">${m0(r.spend)}</td></tr>`).join("")}
+        <tr class="total"><td>Total</td><td></td><td>${n0(C.drivers)}</td><td>100.0%</td>
+          <td>${m0(C.overhead)}</td><td>${m0(C.budget)}</td><td>${m0(C.spend)}</td></tr>
+      </tbody></table></div>
+  </div>`;
+}
+
+function combinedPanel(){
+  const rows = [
+    ["Drivers", n0(A.drivers), n0(S.drivers), n0(C.drivers)],
+    ["Direct marketing budget", m0(A.budget), m0(S.budget), m0(C.budget)],
+    ["Marketing overhead", m0(A.overhead), m0(S.overhead), m0(C.overhead)],
+    ["Total spending", m0(A.spend), m0(S.spend), m0(C.spend)],
+    ["Leads", n0(A.leads), n0(S.leads), n0(C.leads)],
+    ["Pickups", n0(A.pickups), n0(S.pickups), n0(C.pickups)],
+    ["Pickup rate", pc(A.pickupRate), pc(S.pickupRate), pc(C.pickupRate)],
+    ["Weight (kg)", n0(A.weight), n0(S.weight), n0(C.weight)],
+    ["kg per lead", n1(A.kgPerLead), n1(S.kgPerLead), n1(C.kgPerLead)],
+    ["CPL (all-in)", m2(A.allInCPL), m2(S.allInCPL), m2(C.cpl)],
+    ["CAC (all-in)", m2(A.allInCAC), m2(S.allInCAC), m2(C.cac)],
+    ["CPK (all-in)", m3(A.allInCPK), m3(S.allInCPK), m3(C.cpk)]
+  ].map(r=>`<tr><td>${r[0]}</td><td class="calc">${r[1]}</td><td class="calc">${r[2]}</td>
+    <td class="calc"><b>${r[3]}</b></td></tr>`).join("");
+  const ratio = div(S.allInCPK, A.allInCPK);
+  return `
+  <div class="sec">
+    <div class="eyebrow">Roll-up</div>
+    <h3>Awon and Sutra together</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Metric</th><th>Awon</th><th>Sutra</th><th>Combined</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+  </div>
+  <div class="sec">
+    <div class="eyebrow">Share of the month</div>
+    <h3>Where the money and the kilos sit</h3>
+    <div class="summary">
+      <div class="hl"><span class="eyebrow">Awon share of spend</span><b>${pc(div(A.spend,C.spend))}</b></div>
+      <div class="hl"><span class="eyebrow">Awon share of kg</span><b>${pc(div(A.weight,C.weight))}</b></div>
+      <div class="hls"><span class="eyebrow">Sutra share of spend</span><b>${pc(div(S.spend,C.spend))}</b></div>
+      <div class="hls"><span class="eyebrow">Sutra share of kg</span><b>${pc(div(S.weight,C.weight))}</b></div>
+    </div>
+    <div class="flag"><b>Watch the gap.</b> Sutra costs ${isFinite(ratio)?ratio.toFixed(1):"—"}× Awon's CPK
+      (${m3(S.allInCPK)} vs ${m3(A.allInCPK)}) while carrying ${pc(div(S.overhead,S.spend))} of its spend as overhead.
+      Its ${pc(S.pickupRate)} pickup rate and single-driver cities are the two levers with the most room in them.</div>
+  </div>`;
+}
+
+function render(){
+  compute();
+  renderTop();
+  document.getElementById("panel-awon").innerHTML = entityPanel("awon","Awon",A,AWON_COLS,awon);
+  document.getElementById("panel-sutra").innerHTML = entityPanel("sutra","Sutra",S,SUTRA_COLS,sutra);
+  document.getElementById("panel-overhead").innerHTML = overheadPanel();
+  document.getElementById("panel-combined").innerHTML = combinedPanel();
+}
+
+// ---- events ----
+// Re-render replaces the table, so hold the raw text and caret and hand them back.
+function rerenderKeeping(target, selector){
+  const raw = target.value;
+  let pos = null;
+  try { pos = target.selectionStart; } catch(_){}
+  render();
+  const again = document.querySelector(selector);
+  if(again){
+    again.value = raw;
+    again.focus();
+    if(pos !== null){ try { again.setSelectionRange(pos, pos); } catch(_){} }
+  }
+}
+
+document.addEventListener("input", e=>{
+  const t = e.target;
+  if(t.dataset.who){
+    const st = t.dataset.who==="awon" ? awon : sutra;
+    const row = st.cities.find(c=>c.id === Number(t.dataset.id));
+    if(!row) return;
+    const k = t.dataset.key;
+    row[k] = k==="city" ? t.value : (t.value===""?0:Number(t.value));
+    rerenderKeeping(t, `[data-who="${t.dataset.who}"][data-id="${t.dataset.id}"][data-key="${k}"]`);
+  }
+  if(t.dataset.oh && t.tagName !== "SELECT"){
+    const row = overhead.find(r=>r.id === Number(t.dataset.oh));
+    if(!row) return;
+    const k = t.dataset.key;
+    row[k] = k==="item" ? t.value : (t.value===""?0:Number(t.value));
+    rerenderKeeping(t, `[data-oh="${t.dataset.oh}"][data-key="${k}"]`);
+  }
+  if(t.id==="dim-awon"){ awon.daysInMonth = Number(t.value||0); rerenderKeeping(t, "#dim-awon"); }
+  if(t.id==="dim-sutra"){ sutra.daysInMonth = Number(t.value||0); rerenderKeeping(t, "#dim-sutra"); }
+  if(t.id==="monthLabel"){ monthLabel = t.value; }
+});
+
+document.addEventListener("change", e=>{
+  const t = e.target;
+  if(t.dataset.oh && t.tagName==="SELECT"){
+    const row = overhead.find(r=>r.id === Number(t.dataset.oh));
+    if(row){ row.type = t.value; render(); }
+  }
+});
+
+document.addEventListener("click", e=>{
+  const t = e.target;
+  if(t.dataset.add){
+    const who = t.dataset.add;
+    if(who==="awon") awon.cities.push({...AWON_BASE.cities[3], id:Date.now(), city:"New city", drivers:1});
+    else sutra.cities.push({...SUTRA_BASE.cities[0], id:Date.now(), city:"New city"});
+    render();
+  }
+  if(t.dataset.rm){
+    const who = t.dataset.rm;
+    if(who==="awon") awon.cities = awon.cities.filter(c=>c.id!==Number(t.dataset.id));
+    else sutra.cities = sutra.cities.filter(c=>c.id!==Number(t.dataset.id));
+    render();
+  }
+  if(t.id==="addOh"){
+    overhead.push({id:Date.now(), type:"Other", item:"New cost line", total:0, awonPct:0.85});
+    render();
+  }
+  if(t.dataset.ohrm){
+    overhead = overhead.filter(r=>r.id!==Number(t.dataset.ohrm));
+    render();
+  }
+  if(t.classList.contains("tab")){
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+    t.classList.add("on");
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
+    document.getElementById("panel-"+t.dataset.tab).classList.add("on");
+  }
+  if(t.id==="resetBtn"){
+    awon = JSON.parse(JSON.stringify(AWON_BASE));
+    sutra = JSON.parse(JSON.stringify(SUTRA_BASE));
+    overhead = JSON.parse(JSON.stringify(OVERHEAD_BASE));
+    render();
+  }
+  if(t.id==="exportBtn"){ exportExcel(); }
+});
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(()=>{ t.style.display="none"; }, 6000);
+}
+
+// ==== EXPORT START =========================================================
+
+const BRAND = "FF1D4A4F", BRAND_DEEP = "FF123236", BRAND_TINT = "FFDCE8E7", BRAND_WASH = "FFEFF5F4",
+      SUTRA_C = "FFA2643A", SUTRA_TINT = "FFF1E6DA", INPUT_FILL = "FFFFF6E3", RULE = "FFD5D8D2",
+      WHITE = "FFFFFFFF", INK = "FF16211F", DIM = "FF63706E";
+
+const FONT = "Arial";
+const fill = c => ({ type:"pattern", pattern:"solid", fgColor:{argb:c} });
+const thin = { style:"thin", color:{argb:RULE} };
+const box = { top:thin, left:thin, bottom:thin, right:thin };
+
+const NF = { money:'$#,##0;($#,##0);"–"', money2:'$#,##0.00;($#,##0.00);"–"',
+             money3:'$#,##0.000;($#,##0.000);"–"', num:'#,##0;(#,##0);"–"',
+             num1:'#,##0.0;(#,##0.0);"–"', pct:'0.0%' };
+
+function styleTitle(ws, range, text, sub, colour){
+  ws.mergeCells(range);
+  const c = ws.getCell(range.split(":")[0]);
+  c.value = text;
+  c.font = { name:FONT, size:16, bold:true, color:{argb:WHITE} };
+  c.fill = fill(colour || BRAND);
+  c.alignment = { vertical:"middle", horizontal:"left", indent:1 };
+  ws.getRow(c.row).height = 30;
+  if(sub){
+    const r2 = c.row + 1;
+    const end = range.split(":")[1].replace(/\d+/, r2);
+    ws.mergeCells(`A${r2}:${end}`);
+    const s = ws.getCell(`A${r2}`);
+    s.value = sub;
+    s.font = { name:FONT, size:9, italic:true, color:{argb:DIM} };
+    s.alignment = { vertical:"middle", horizontal:"left", indent:1 };
+    ws.getRow(r2).height = 18;
+  }
+}
+
+function bandRow(ws, row, spans, colour){
+  spans.forEach(([from,to,label])=>{
+    ws.mergeCells(`${from}${row}:${to}${row}`);
+    const c = ws.getCell(`${from}${row}`);
+    c.value = label;
+    c.font = { name:FONT, size:9, bold:true, color:{argb:colour} };
+    c.fill = fill(BRAND_TINT);
+    c.alignment = { horizontal:"center", vertical:"middle" };
+    c.border = box;
+  });
+  ws.getRow(row).height = 18;
+}
+
+function headerRow(ws, row, map, colour){
+  Object.entries(map).forEach(([col,label])=>{
+    const c = ws.getCell(col+row);
+    c.value = label;
+    c.font = { name:FONT, size:9, bold:true, color:{argb:WHITE} };
+    c.fill = fill(colour);
+    c.alignment = { horizontal:"center", vertical:"bottom", wrapText:true };
+    c.border = box;
+  });
+  ws.getRow(row).height = 42;
+}
+
+function put(ws, addr, value, opts){
+  const c = ws.getCell(addr);
+  c.value = value;
+  const o = opts || {};
+  c.font = { name:FONT, size:10, bold:!!o.bold, color:{argb:o.colour || INK} };
+  if(o.numFmt) c.numFmt = o.numFmt;
+  if(o.fill) c.fill = fill(o.fill);
+  c.border = box;
+  c.alignment = { horizontal: o.align || (typeof value === "object" || typeof value === "number" ? "right" : "left"),
+                  vertical:"middle", indent: o.align === "left" || typeof value === "string" ? 1 : 0 };
+  return c;
+}
+const F = (formula, result) => ({ formula, result: isFinite(result) ? result : 0 });
+
+function sectionHead(ws, row, from, to, text, colour){
+  ws.mergeCells(`${from}${row}:${to}${row}`);
+  const c = ws.getCell(`${from}${row}`);
+  c.value = text;
+  c.font = { name:FONT, size:11, bold:true, color:{argb:WHITE} };
+  c.fill = fill(colour || BRAND_DEEP);
+  c.alignment = { vertical:"middle", horizontal:"left", indent:1 };
+  ws.getRow(row).height = 22;
+}
+
+async function exportExcel(){
+  try{
+    compute();
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Awon & Sutra forecast console";
+    wb.created = new Date();
+    const stamp = new Date().toISOString().slice(0,10);
+
+    /* ---------------- Overhead Allocation ---------------- */
+    const oh = wb.addWorksheet("Overhead Allocation", { views:[{ state:"frozen", ySplit:5 }] });
+    oh.columns = [{width:26},{width:34},{width:14},{width:13},{width:14},{width:14}];
+    styleTitle(oh, "A1:F1", "MARKETING OVERHEAD — SHARED COST POOL", `${monthLabel}  ·  generated ${stamp}  ·  shaded cells are inputs`);
+    headerRow(oh, 4, { A:"Cost type", B:"Line item", C:"Budget", D:"Awon share %", E:"Awon $", F:"Sutra $" }, BRAND);
+    overhead.forEach((r,i)=>{
+      const R = 5+i, wash = i%2 ? BRAND_WASH : null;
+      put(oh, "A"+R, r.type, { fill:INPUT_FILL, align:"left" });
+      put(oh, "B"+R, r.item, { fill:INPUT_FILL, align:"left" });
+      put(oh, "C"+R, r.total, { fill:INPUT_FILL, numFmt:NF.money });
+      put(oh, "D"+R, r.awonPct, { fill:INPUT_FILL, numFmt:NF.pct });
+      put(oh, "E"+R, F(`C${R}*D${R}`, r.total*r.awonPct), { numFmt:NF.money, fill:wash });
+      put(oh, "F"+R, F(`C${R}-E${R}`, r.total*(1-r.awonPct)), { numFmt:NF.money, fill:wash });
+    });
+    const ohT = 5 + overhead.length, ohLast = ohT - 1;
+    const ohTotal = overhead.reduce((a,r)=>a+r.total,0);
+    put(oh, "A"+ohT, "TOTAL", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
+    put(oh, "B"+ohT, "", { fill:BRAND_DEEP });
+    put(oh, "C"+ohT, F(`SUM(C5:C${ohLast})`, ohTotal), { bold:true, colour:WHITE, fill:BRAND_DEEP, numFmt:NF.money });
+    put(oh, "D"+ohT, F(`IFERROR(E${ohT}/C${ohT},0)`, div(ohAwon, ohTotal)), { bold:true, colour:WHITE, fill:BRAND_DEEP, numFmt:NF.pct });
+    put(oh, "E"+ohT, F(`SUM(E5:E${ohLast})`, ohAwon), { bold:true, colour:WHITE, fill:BRAND_DEEP, numFmt:NF.money });
+    put(oh, "F"+ohT, F(`SUM(F5:F${ohLast})`, ohSutra), { bold:true, colour:WHITE, fill:BRAND_DEEP, numFmt:NF.money });
+
+    // summary by cost type
+    const byType = {};
+    overhead.forEach(r=>{ byType[r.type] = (byType[r.type]||0) + r.total; });
+    const typeRows = Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+    const tHead = ohT + 3;
+    sectionHead(oh, tHead-1, "A", "F", "BUDGET BY COST TYPE");
+    headerRow(oh, tHead, { A:"Cost type", B:"Budget", C:"Share of pool" }, BRAND);
+    typeRows.forEach(([t,v],i)=>{
+      const R = tHead+1+i, wash = i%2 ? BRAND_WASH : null;
+      put(oh, "A"+R, t, { align:"left", fill:wash });
+      put(oh, "B"+R, F(`SUMIF($A$5:$A$${ohLast},A${R},$C$5:$C$${ohLast})`, v), { numFmt:NF.money, fill:wash });
+      put(oh, "C"+R, F(`IFERROR(B${R}/$C$${ohT},0)`, div(v, ohTotal)), { numFmt:NF.pct, fill:wash });
+    });
+    const OH_A = `'Overhead Allocation'!$E$${ohT}`;
+    const OH_S = `'Overhead Allocation'!$F$${ohT}`;
+
+    /* ---------------- Awon Forecast ---------------- */
+    const ws = wb.addWorksheet("Awon Forecast", { views:[{ state:"frozen", xSplit:2, ySplit:5 }] });
+    const aw = [{width:11},{width:14},{width:13},{width:13},{width:11},{width:13},{width:11},{width:13},{width:11},
+                {width:12},{width:11},{width:13},{width:12},{width:13},{width:12},{width:3},
+                {width:9},{width:11},{width:12},{width:12},{width:12},{width:12},{width:12},{width:14},{width:13},
+                {width:11},{width:11},{width:11},{width:3},
+                {width:12},{width:11},{width:14},{width:11},{width:11},{width:12}];
+    ws.columns = aw;
+    styleTitle(ws, "A1:AI1", `AWON — ${monthLabel.toUpperCase()} FORECAST`,
+      `Generated ${stamp}  ·  shaded cells are inputs, everything else is a live formula  ·  overhead pulled from the Overhead Allocation sheet`);
+    bandRow(ws, 4, [["C","O","MARKETING"],["Q","AB","LOGISTICS"],["AD","AI","RATE ASSUMPTIONS (INPUTS)"]], BRAND);
+    const H = 5, n = A.rows.length, last = H+n, tot = last+1;
+    headerRow(ws, H, { A:"Initiative", B:"City", C:"Monthly budget", D:"Total leads / month", E:"Daily leads",
+      F:"Paid budget", G:"Paid leads", H:"Branding budget", I:"Organic leads", J:"WA budget", K:"WA leads",
+      L:"On-ground budget", M:"On-ground leads", N:"Affiliate budget", O:"Affiliate leads",
+      Q:"Drivers", R:"Days of op.", S:"Daily leads / driver", T:"Daily pickups / driver", U:"Pickups / month",
+      V:"Car capacity kg", W:"Avg kg / pickup", X:"Expected monthly weight", Y:"Expected daily weight",
+      Z:"Direct CPL", AA:"Direct CPK", AB:"Direct CAC",
+      AD:"Paid $ / driver", AE:"Paid CPL", AF:"Branding $ / organic lead", AG:"WA $ / lead", AH:"Pickup rate", AI:"Car utilisation" }, BRAND);
+    ws.getCell("AD3").value = "Days in month";
+    ws.getCell("AD3").font = { name:FONT, size:9, bold:true, color:{argb:DIM} };
+    put(ws, "AE3", awon.daysInMonth, { fill:INPUT_FILL, numFmt:NF.num, bold:true });
+
+    A.rows.forEach((r,i)=>{
+      const R = H+1+i, wash = i%2 ? BRAND_WASH : null;
+      put(ws, "A"+R, i===0 ? "Awon" : "", { align:"left", bold:true, fill:wash });
+      put(ws, "B"+R, r.city, { align:"left", bold:true, fill:INPUT_FILL });
+      put(ws, "C"+R, F(`F${R}+H${R}+J${R}+L${R}+N${R}`, r.budget), { numFmt:NF.money, bold:true, fill:wash });
+      put(ws, "D"+R, F(`G${R}+I${R}+K${R}+M${R}+O${R}`, r.leads), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "E"+R, F(`IFERROR(D${R}/$AE$3,0)`, r.dailyLeads), { numFmt:NF.num1, fill:wash });
+      put(ws, "F"+R, F(`AD${R}*Q${R}`, r.paidBudget), { numFmt:NF.money, fill:wash });
+      put(ws, "G"+R, F(`IFERROR(F${R}/AE${R},0)`, r.paidLeads), { numFmt:NF.num, fill:wash });
+      put(ws, "H"+R, F(`I${R}*AF${R}`, r.brandingBudget), { numFmt:NF.money, fill:wash });
+      put(ws, "I"+R, r.organicLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "J"+R, F(`K${R}*AG${R}`, r.waBudget), { numFmt:NF.money, fill:wash });
+      put(ws, "K"+R, r.waLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "L"+R, r.ogBudget, { numFmt:NF.money, fill:INPUT_FILL });
+      put(ws, "M"+R, r.ogLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "N"+R, r.affBudget, { numFmt:NF.money, fill:INPUT_FILL });
+      put(ws, "O"+R, r.affLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "Q"+R, r.drivers, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "R"+R, r.days, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "S"+R, F(`IFERROR((D${R}/R${R})/Q${R},0)`, r.leadsPerDriverDay), { numFmt:NF.num1, fill:wash });
+      put(ws, "T"+R, F(`S${R}*AH${R}`, r.pickupsPerDriverDay), { numFmt:NF.num1, fill:wash });
+      put(ws, "U"+R, F(`T${R}*R${R}*Q${R}`, r.pickups), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "V"+R, r.carCap, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "W"+R, r.wpp, { numFmt:NF.num1, fill:INPUT_FILL });
+      put(ws, "X"+R, F(`U${R}*W${R}`, r.weight), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "Y"+R, F(`IFERROR(X${R}/R${R},0)`, r.dailyWeight), { numFmt:NF.num, fill:wash });
+      put(ws, "Z"+R, F(`IFERROR(C${R}/D${R},0)`, r.cpl), { numFmt:NF.money2, fill:wash });
+      put(ws, "AA"+R, F(`IFERROR(C${R}/X${R},0)`, r.cpk), { numFmt:NF.money3, fill:wash });
+      put(ws, "AB"+R, F(`IFERROR(C${R}/U${R},0)`, r.cac), { numFmt:NF.money2, fill:wash });
+      put(ws, "AD"+R, r.paidPerDriver, { numFmt:NF.money, fill:INPUT_FILL });
+      put(ws, "AE"+R, r.paidCPL, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(ws, "AF"+R, r.brandMult, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(ws, "AG"+R, r.waMult, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(ws, "AH"+R, r.pickupRate, { numFmt:NF.pct, fill:INPUT_FILL });
+      put(ws, "AI"+R, F(`IFERROR((Y${R}/Q${R})/V${R},0)`, r.carUse), { numFmt:NF.pct, fill:wash });
+    });
+
+    const rg = c => `${c}${H+1}:${c}${last}`;
+    const T = (addr, val, fmt) => put(ws, addr, val, { numFmt:fmt, bold:true, colour:WHITE, fill:BRAND_DEEP });
+    put(ws, "A"+tot, "TOTAL", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
+    put(ws, "B"+tot, "/ blended", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
+    [["C",A.budget,NF.money],["D",A.leads,NF.num],["F",A.paidBudget,NF.money],["G",A.paidLeads,NF.num],
+     ["H",A.brandingBudget,NF.money],["I",A.organicLeads,NF.num],["J",A.waBudget,NF.money],["K",A.waLeads,NF.num],
+     ["L",A.ogBudget,NF.money],["M",A.ogLeads,NF.num],["N",A.affBudget,NF.money],["O",A.affLeads,NF.num],
+     ["Q",A.drivers,NF.num],["U",A.pickups,NF.num],["X",A.weight,NF.num],["Y",A.dailyWeight,NF.num]]
+      .forEach(([c,v,f])=> T(c+tot, F(`SUM(${rg(c)})`, v), f));
+    T("E"+tot, F(`IFERROR(D${tot}/$AE$3,0)`, A.dailyLeads), NF.num1);
+    T("R"+tot, F(`AVERAGE(${rg("R")})`, A.days), NF.num1);
+    T("S"+tot, F(`IFERROR((D${tot}/R${tot})/Q${tot},0)`, A.leadsPerDriverDay), NF.num1);
+    T("T"+tot, F(`IFERROR((U${tot}/D${tot})*S${tot},0)`, A.pickupsPerDriverDay), NF.num1);
+    T("V"+tot, F(`AVERAGE(${rg("V")})`, A.carCapAvg), NF.num);
+    T("W"+tot, F(`IFERROR(X${tot}/U${tot},0)`, A.wpp), NF.num1);
+    T("Z"+tot, F(`IFERROR(C${tot}/D${tot},0)`, A.directCPL), NF.money2);
+    T("AA"+tot, F(`IFERROR(C${tot}/X${tot},0)`, A.directCPK), NF.money3);
+    T("AB"+tot, F(`IFERROR(C${tot}/U${tot},0)`, A.directCAC), NF.money2);
+    T("AD"+tot, F(`IFERROR(F${tot}/Q${tot},0)`, A.paidPerDriver), NF.money);
+    T("AE"+tot, F(`IFERROR(F${tot}/G${tot},0)`, A.paidCPL), NF.money2);
+    T("AF"+tot, F(`IFERROR(H${tot}/I${tot},0)`, A.brandMult), NF.money2);
+    T("AG"+tot, F(`IFERROR(J${tot}/K${tot},0)`, A.waMult), NF.money2);
+    T("AH"+tot, F(`IFERROR(U${tot}/D${tot},0)`, A.pickupRate), NF.pct);
+    ws.getRow(tot).height = 20;
+
+    // channel mix
+    let R0 = tot + 2;
+    sectionHead(ws, R0, "A", "O", "CHANNEL MIX");
+    const mixL = R0+1, mixV = R0+2;
+    headerRow(ws, mixL, { F:"Paid budget %", G:"Paid leads %", H:"Branding budget %", I:"Organic leads %",
+      J:"WA budget %", K:"WA leads %", L:"On-ground budget %", M:"On-ground leads %",
+      N:"Affiliate budget %", O:"Affiliate leads %" }, BRAND);
+    put(ws, "A"+mixV, "Share of total", { align:"left", bold:true });
+    [["F",div(A.paidBudget,A.budget),"C"],["G",div(A.paidLeads,A.leads),"D"],
+     ["H",div(A.brandingBudget,A.budget),"C"],["I",div(A.organicLeads,A.leads),"D"],
+     ["J",div(A.waBudget,A.budget),"C"],["K",div(A.waLeads,A.leads),"D"],
+     ["L",div(A.ogBudget,A.budget),"C"],["M",div(A.ogLeads,A.leads),"D"],
+     ["N",div(A.affBudget,A.budget),"C"],["O",div(A.affLeads,A.leads),"D"]]
+      .forEach(([c,v,b])=> put(ws, c+mixV, F(`IFERROR(${c}${tot}/${b}${tot},0)`, v), { numFmt:NF.pct, fill:BRAND_TINT, bold:true }));
+
+    // executive summary
+    let R1 = mixV + 2;
+    sectionHead(ws, R1, "A", "D", "EXECUTIVE SUMMARY");
+    const sum = [
+      ["Total drivers", `Q${tot}`, A.drivers, NF.num],
+      ["Days of operation (avg)", `R${tot}`, A.days, NF.num1],
+      ["Total leads", `D${tot}`, A.leads, NF.num],
+      ["Total pickups", `U${tot}`, A.pickups, NF.num],
+      ["Blended pickup rate", `IFERROR(U${tot}/D${tot},0)`, A.pickupRate, NF.pct],
+      ["Target weight (kg)", `X${tot}`, A.weight, NF.num],
+      ["Direct marketing budget", `C${tot}`, A.budget, NF.money],
+      ["Marketing overhead (Awon share)", OH_A, A.overhead, NF.money],
+      ["Total spending", `C${tot}+${OH_A}`, A.spend, NF.money],
+      ["Paid CPL", `IFERROR(F${tot}/G${tot},0)`, A.paidCPL, NF.money2],
+      ["Marketing CPL (all-in)", `IFERROR((C${tot}+${OH_A})/D${tot},0)`, A.allInCPL, NF.money2],
+      ["CAC (all-in)", `IFERROR((C${tot}+${OH_A})/U${tot},0)`, A.allInCAC, NF.money2],
+      ["CPK (all-in)", `IFERROR((C${tot}+${OH_A})/X${tot},0)`, A.allInCPK, NF.money3],
+      ["Weight-to-leads ratio (kg / lead)", `IFERROR(X${tot}/D${tot},0)`, A.kgPerLead, NF.num1]
+    ];
+    sum.forEach(([l,f,v,fmt],i)=>{
+      const R = R1+1+i, wash = i%2 ? BRAND_WASH : null;
+      ws.mergeCells(`A${R}:B${R}`);
+      put(ws, "A"+R, l, { align:"left", fill:wash });
+      put(ws, "C"+R, F(f,v), { numFmt:fmt, bold:true, fill:wash });
+    });
+
+    // city allocation incl. overhead on driver share
+    let R2 = R1 + sum.length + 3;
+    sectionHead(ws, R2, "A", "I", "CITY SPEND — DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE");
+    headerRow(ws, R2+1, { A:"City", B:"Drivers", C:"Driver share", D:"Direct budget", E:"Overhead carried",
+      F:"City spend", G:"CPL", H:"CAC", I:"CPK" }, BRAND);
+    A.rows.forEach((r,i)=>{
+      const R = R2+2+i, src = H+1+i, wash = i%2 ? BRAND_WASH : null;
+      put(ws, "A"+R, r.city, { align:"left", bold:true, fill:wash });
+      put(ws, "B"+R, F(`Q${src}`, r.drivers), { numFmt:NF.num, fill:wash });
+      put(ws, "C"+R, F(`IFERROR(B${R}/$Q$${tot},0)`, r.driverShare), { numFmt:NF.pct, fill:wash });
+      put(ws, "D"+R, F(`C${src}`, r.budget), { numFmt:NF.money, fill:wash });
+      put(ws, "E"+R, F(`${OH_A}*C${R}`, r.ohShare), { numFmt:NF.money, fill:wash });
+      put(ws, "F"+R, F(`D${R}+E${R}`, r.spend), { numFmt:NF.money, bold:true, fill:wash });
+      put(ws, "G"+R, F(`IFERROR(F${R}/D${src},0)`, r.allInCPL), { numFmt:NF.money2, fill:wash });
+      put(ws, "H"+R, F(`IFERROR(F${R}/U${src},0)`, r.allInCAC), { numFmt:NF.money2, fill:wash });
+      put(ws, "I"+R, F(`IFERROR(F${R}/X${src},0)`, r.allInCPK), { numFmt:NF.money3, fill:wash });
+    });
+    const allocT = R2+2+n, af = (a,v,f)=>put(ws, a, v, { numFmt:f, bold:true, colour:WHITE, fill:BRAND_DEEP });
+    put(ws, "A"+allocT, "TOTAL", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
+    af("B"+allocT, F(`SUM(B${R2+2}:B${allocT-1})`, A.drivers), NF.num);
+    af("C"+allocT, F(`SUM(C${R2+2}:C${allocT-1})`, 1), NF.pct);
+    af("D"+allocT, F(`SUM(D${R2+2}:D${allocT-1})`, A.budget), NF.money);
+    af("E"+allocT, F(`SUM(E${R2+2}:E${allocT-1})`, A.overhead), NF.money);
+    af("F"+allocT, F(`SUM(F${R2+2}:F${allocT-1})`, A.spend), NF.money);
+    af("G"+allocT, F(`IFERROR(F${allocT}/D${tot},0)`, A.allInCPL), NF.money2);
+    af("H"+allocT, F(`IFERROR(F${allocT}/U${tot},0)`, A.allInCAC), NF.money2);
+    af("I"+allocT, F(`IFERROR(F${allocT}/X${tot},0)`, A.allInCPK), NF.money3);
+
+    /* ---------------- Sutra Forecast ---------------- */
+    const sw = wb.addWorksheet("Sutra Forecast", { views:[{ state:"frozen", xSplit:2, ySplit:5 }] });
+    sw.columns = [{width:11},{width:14},{width:13},{width:13},{width:13},{width:11},{width:12},{width:11},
+                  {width:14},{width:11},{width:3},
+                  {width:9},{width:11},{width:12},{width:13},{width:12},{width:13},{width:12},{width:14},{width:13},
+                  {width:11},{width:11},{width:11},{width:3},
+                  {width:11},{width:12},{width:16},{width:11},{width:12}];
+    styleTitle(sw, "A1:AC1", `SUTRA — ${monthLabel.toUpperCase()} FORECAST`,
+      `Generated ${stamp}  ·  shaded cells are inputs  ·  overhead pulled from the Overhead Allocation sheet`, SUTRA_C);
+    bandRow(sw, 4, [["C","J","MARKETING"],["L","W","LOGISTICS"],["Y","AC","RATE ASSUMPTIONS (INPUTS)"]], SUTRA_C);
+    const sH = 5, sn = S.rows.length, sLast = sH+sn, sTot = sLast+1;
+    headerRow(sw, sH, { A:"Initiative", B:"City", C:"Monthly budget", D:"Total leads / month", E:"Paid budget",
+      F:"Paid leads", G:"WA budget", H:"WA leads", I:"Branding budget", J:"Organic leads",
+      L:"Drivers", M:"Days of op.", N:"Daily leads / driver", O:"Daily pickups / driver", P:"Pickups / month",
+      Q:"Car capacity kg", R:"Avg kg / pickup", S:"Expected monthly weight", T:"Expected daily weight",
+      U:"Direct CPL", V:"Direct CPK", W:"Direct CAC",
+      Y:"Paid CPL", Z:"WA $ / lead", AA:"Branding $ / organic lead", AB:"Pickup rate", AC:"Car utilisation" }, SUTRA_C);
+    sw.getCell("Y3").value = "Days in month";
+    sw.getCell("Y3").font = { name:FONT, size:9, bold:true, color:{argb:DIM} };
+    put(sw, "Z3", sutra.daysInMonth, { fill:INPUT_FILL, numFmt:NF.num, bold:true });
+
+    S.rows.forEach((r,i)=>{
+      const R = sH+1+i, wash = i%2 ? SUTRA_TINT : null;
+      put(sw, "A"+R, i===0 ? "Sutra" : "", { align:"left", bold:true, fill:wash });
+      put(sw, "B"+R, r.city, { align:"left", bold:true, fill:INPUT_FILL });
+      put(sw, "C"+R, F(`E${R}+G${R}+I${R}`, r.budget), { numFmt:NF.money, bold:true, fill:wash });
+      put(sw, "D"+R, F(`F${R}+H${R}+J${R}`, r.leads), { numFmt:NF.num, bold:true, fill:wash });
+      put(sw, "E"+R, r.paidBudget, { numFmt:NF.money, fill:INPUT_FILL });
+      put(sw, "F"+R, F(`IFERROR(E${R}/Y${R},0)`, r.paidLeads), { numFmt:NF.num, fill:wash });
+      put(sw, "G"+R, F(`H${R}*Z${R}`, r.waBudget), { numFmt:NF.money, fill:wash });
+      put(sw, "H"+R, r.waLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(sw, "I"+R, F(`J${R}*AA${R}`, r.brandingBudget), { numFmt:NF.money, fill:wash });
+      put(sw, "J"+R, r.organicLeads, { numFmt:NF.num, fill:INPUT_FILL });
+      put(sw, "L"+R, r.drivers, { numFmt:NF.num, fill:INPUT_FILL });
+      put(sw, "M"+R, r.days, { numFmt:NF.num, fill:INPUT_FILL });
+      put(sw, "N"+R, F(`IFERROR((D${R}/M${R})/L${R},0)`, r.leadsPerDriverDay), { numFmt:NF.num1, fill:wash });
+      put(sw, "O"+R, F(`N${R}*AB${R}`, r.pickupsPerDriverDay), { numFmt:NF.num1, fill:wash });
+      put(sw, "P"+R, F(`O${R}*M${R}*L${R}`, r.pickups), { numFmt:NF.num, bold:true, fill:wash });
+      put(sw, "Q"+R, r.carCap, { numFmt:NF.num, fill:INPUT_FILL });
+      put(sw, "R"+R, r.wpp, { numFmt:NF.num1, fill:INPUT_FILL });
+      put(sw, "S"+R, F(`P${R}*R${R}`, r.weight), { numFmt:NF.num, bold:true, fill:wash });
+      put(sw, "T"+R, F(`IFERROR(S${R}/M${R},0)`, r.dailyWeight), { numFmt:NF.num, fill:wash });
+      put(sw, "U"+R, F(`IFERROR(C${R}/D${R},0)`, r.cpl), { numFmt:NF.money2, fill:wash });
+      put(sw, "V"+R, F(`IFERROR(C${R}/S${R},0)`, r.cpk), { numFmt:NF.money3, fill:wash });
+      put(sw, "W"+R, F(`IFERROR(C${R}/P${R},0)`, r.cac), { numFmt:NF.money2, fill:wash });
+      put(sw, "Y"+R, r.paidCPL, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(sw, "Z"+R, r.waMult, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(sw, "AA"+R, r.brandMult, { numFmt:NF.money2, fill:INPUT_FILL });
+      put(sw, "AB"+R, r.pickupRate, { numFmt:NF.pct, fill:INPUT_FILL });
+      put(sw, "AC"+R, F(`IFERROR((T${R}/L${R})/Q${R},0)`, r.carUse), { numFmt:NF.pct, fill:wash });
+    });
+    const srg = c => `${c}${sH+1}:${c}${sLast}`;
+    const ST = (addr,val,fmt) => put(sw, addr, val, { numFmt:fmt, bold:true, colour:WHITE, fill:"FF6E4426" });
+    put(sw, "A"+sTot, "TOTAL", { bold:true, colour:WHITE, fill:"FF6E4426", align:"left" });
+    put(sw, "B"+sTot, "/ blended", { bold:true, colour:WHITE, fill:"FF6E4426", align:"left" });
+    [["C",S.budget,NF.money],["D",S.leads,NF.num],["E",S.paidBudget,NF.money],["F",S.paidLeads,NF.num],
+     ["G",S.waBudget,NF.money],["H",S.waLeads,NF.num],["I",S.brandingBudget,NF.money],["J",S.organicLeads,NF.num],
+     ["L",S.drivers,NF.num],["P",S.pickups,NF.num],["S",S.weight,NF.num],["T",S.dailyWeight,NF.num]]
+      .forEach(([c,v,f])=> ST(c+sTot, F(`SUM(${srg(c)})`, v), f));
+    ST("M"+sTot, F(`AVERAGE(${srg("M")})`, S.days), NF.num1);
+    ST("N"+sTot, F(`IFERROR((D${sTot}/M${sTot})/L${sTot},0)`, S.leadsPerDriverDay), NF.num1);
+    ST("O"+sTot, F(`IFERROR((P${sTot}/D${sTot})*N${sTot},0)`, S.pickupsPerDriverDay), NF.num1);
+    ST("Q"+sTot, F(`AVERAGE(${srg("Q")})`, S.carCapAvg), NF.num);
+    ST("R"+sTot, F(`IFERROR(S${sTot}/P${sTot},0)`, S.wpp), NF.num1);
+    ST("U"+sTot, F(`IFERROR(C${sTot}/D${sTot},0)`, S.directCPL), NF.money2);
+    ST("V"+sTot, F(`IFERROR(C${sTot}/S${sTot},0)`, S.directCPK), NF.money3);
+    ST("W"+sTot, F(`IFERROR(C${sTot}/P${sTot},0)`, S.directCAC), NF.money2);
+    ST("Y"+sTot, F(`IFERROR(E${sTot}/F${sTot},0)`, S.paidCPL), NF.money2);
+    ST("Z"+sTot, F(`IFERROR(G${sTot}/H${sTot},0)`, S.waMult), NF.money2);
+    ST("AA"+sTot, F(`IFERROR(I${sTot}/J${sTot},0)`, S.brandMult), NF.money2);
+    ST("AB"+sTot, F(`IFERROR(P${sTot}/D${sTot},0)`, S.pickupRate), NF.pct);
+    sw.getRow(sTot).height = 20;
+
+    let SR = sTot + 2;
+    sectionHead(sw, SR, "A", "D", "EXECUTIVE SUMMARY", "FF6E4426");
+    const ssum = [
+      ["Total drivers", `L${sTot}`, S.drivers, NF.num],
+      ["Days of operation (avg)", `M${sTot}`, S.days, NF.num1],
+      ["Total leads", `D${sTot}`, S.leads, NF.num],
+      ["Total pickups", `P${sTot}`, S.pickups, NF.num],
+      ["Blended pickup rate", `IFERROR(P${sTot}/D${sTot},0)`, S.pickupRate, NF.pct],
+      ["Target weight (kg)", `S${sTot}`, S.weight, NF.num],
+      ["Direct marketing budget", `C${sTot}`, S.budget, NF.money],
+      ["Marketing overhead (Sutra share)", OH_S, S.overhead, NF.money],
+      ["Total spending", `C${sTot}+${OH_S}`, S.spend, NF.money],
+      ["Paid CPL", `IFERROR(E${sTot}/F${sTot},0)`, S.paidCPL, NF.money2],
+      ["Marketing CPL (all-in)", `IFERROR((C${sTot}+${OH_S})/D${sTot},0)`, S.allInCPL, NF.money2],
+      ["CAC (all-in)", `IFERROR((C${sTot}+${OH_S})/P${sTot},0)`, S.allInCAC, NF.money2],
+      ["CPK (all-in)", `IFERROR((C${sTot}+${OH_S})/S${sTot},0)`, S.allInCPK, NF.money3],
+      ["Weight-to-leads ratio (kg / lead)", `IFERROR(S${sTot}/D${sTot},0)`, S.kgPerLead, NF.num1]
+    ];
+    ssum.forEach(([l,f,v,fmt],i)=>{
+      const R = SR+1+i, wash = i%2 ? SUTRA_TINT : null;
+      sw.mergeCells(`A${R}:B${R}`);
+      put(sw, "A"+R, l, { align:"left", fill:wash });
+      put(sw, "C"+R, F(f,v), { numFmt:fmt, bold:true, fill:wash });
+    });
+
+    let SR2 = SR + ssum.length + 3;
+    sectionHead(sw, SR2, "A", "I", "CITY SPEND — DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE", "FF6E4426");
+    headerRow(sw, SR2+1, { A:"City", B:"Drivers", C:"Driver share", D:"Direct budget", E:"Overhead carried",
+      F:"City spend", G:"CPL", H:"CAC", I:"CPK" }, SUTRA_C);
+    S.rows.forEach((r,i)=>{
+      const R = SR2+2+i, src = sH+1+i, wash = i%2 ? SUTRA_TINT : null;
+      put(sw, "A"+R, r.city, { align:"left", bold:true, fill:wash });
+      put(sw, "B"+R, F(`L${src}`, r.drivers), { numFmt:NF.num, fill:wash });
+      put(sw, "C"+R, F(`IFERROR(B${R}/$L$${sTot},0)`, r.driverShare), { numFmt:NF.pct, fill:wash });
+      put(sw, "D"+R, F(`C${src}`, r.budget), { numFmt:NF.money, fill:wash });
+      put(sw, "E"+R, F(`${OH_S}*C${R}`, r.ohShare), { numFmt:NF.money, fill:wash });
+      put(sw, "F"+R, F(`D${R}+E${R}`, r.spend), { numFmt:NF.money, bold:true, fill:wash });
+      put(sw, "G"+R, F(`IFERROR(F${R}/D${src},0)`, r.allInCPL), { numFmt:NF.money2, fill:wash });
+      put(sw, "H"+R, F(`IFERROR(F${R}/P${src},0)`, r.allInCAC), { numFmt:NF.money2, fill:wash });
+      put(sw, "I"+R, F(`IFERROR(F${R}/S${src},0)`, r.allInCPK), { numFmt:NF.money3, fill:wash });
+    });
+    const sAllocT = SR2+2+sn, sf = (a,v,f)=>put(sw, a, v, { numFmt:f, bold:true, colour:WHITE, fill:"FF6E4426" });
+    put(sw, "A"+sAllocT, "TOTAL", { bold:true, colour:WHITE, fill:"FF6E4426", align:"left" });
+    sf("B"+sAllocT, F(`SUM(B${SR2+2}:B${sAllocT-1})`, S.drivers), NF.num);
+    sf("C"+sAllocT, F(`SUM(C${SR2+2}:C${sAllocT-1})`, 1), NF.pct);
+    sf("D"+sAllocT, F(`SUM(D${SR2+2}:D${sAllocT-1})`, S.budget), NF.money);
+    sf("E"+sAllocT, F(`SUM(E${SR2+2}:E${sAllocT-1})`, S.overhead), NF.money);
+    sf("F"+sAllocT, F(`SUM(F${SR2+2}:F${sAllocT-1})`, S.spend), NF.money);
+    sf("G"+sAllocT, F(`IFERROR(F${sAllocT}/D${sTot},0)`, S.allInCPL), NF.money2);
+    sf("H"+sAllocT, F(`IFERROR(F${sAllocT}/P${sTot},0)`, S.allInCAC), NF.money2);
+    sf("I"+sAllocT, F(`IFERROR(F${sAllocT}/S${sTot},0)`, S.allInCPK), NF.money3);
+
+    /* ---------------- Combined Summary ---------------- */
+    const cw = wb.addWorksheet("Combined Summary", { views:[{ state:"frozen", ySplit:5 }] });
+    cw.columns = [{width:36},{width:16},{width:16},{width:16}];
+    styleTitle(cw, "A1:D1", `AWON + SUTRA — COMBINED, ${monthLabel.toUpperCase()}`,
+      `Generated ${stamp}  ·  every figure links to the Awon Forecast and Sutra Forecast sheets`);
+    sectionHead(cw, 4, "A", "D", "MONTHLY ROLL-UP");
+    headerRow(cw, 5, { A:"Metric", B:"Awon", C:"Sutra", D:"Combined" }, BRAND);
+    const AW = a => `'Awon Forecast'!${a}`, SU = a => `'Sutra Forecast'!${a}`;
+    const cRows = [
+      ["Drivers", AW("Q"+tot), SU("L"+sTot), A.drivers, S.drivers, NF.num],
+      ["Direct marketing budget", AW("C"+tot), SU("C"+sTot), A.budget, S.budget, NF.money],
+      ["Marketing overhead", OH_A, OH_S, A.overhead, S.overhead, NF.money],
+      ["Total spending", `${AW("C"+tot)}+${OH_A}`, `${SU("C"+sTot)}+${OH_S}`, A.spend, S.spend, NF.money],
+      ["Leads", AW("D"+tot), SU("D"+sTot), A.leads, S.leads, NF.num],
+      ["Pickups", AW("U"+tot), SU("P"+sTot), A.pickups, S.pickups, NF.num],
+      ["Weight (kg)", AW("X"+tot), SU("S"+sTot), A.weight, S.weight, NF.num]
+    ];
+    cRows.forEach(([l,fa,fs,va,vs,fmt],i)=>{
+      const R = 6+i, wash = i%2 ? BRAND_WASH : null;
+      put(cw, "A"+R, l, { align:"left", bold:true, fill:wash });
+      put(cw, "B"+R, F(fa,va), { numFmt:fmt, fill:wash });
+      put(cw, "C"+R, F(fs,vs), { numFmt:fmt, fill:wash });
+      put(cw, "D"+R, F(`B${R}+C${R}`, va+vs), { numFmt:fmt, bold:true, fill:BRAND_TINT });
+    });
+    const rSpend = 9, rLeads = 10, rPick = 11, rWt = 12;
+    const ratios = [
+      ["CPL (all-in)", rSpend, rLeads, NF.money2, [A.allInCPL, S.allInCPL, C.cpl]],
+      ["CAC (all-in)", rSpend, rPick, NF.money2, [A.allInCAC, S.allInCAC, C.cac]],
+      ["CPK (all-in)", rSpend, rWt, NF.money3, [A.allInCPK, S.allInCPK, C.cpk]],
+      ["Pickup rate", rPick, rLeads, NF.pct, [A.pickupRate, S.pickupRate, C.pickupRate]],
+      ["Weight per lead (kg)", rWt, rLeads, NF.num1, [A.kgPerLead, S.kgPerLead, C.kgPerLead]]
+    ];
+    ratios.forEach(([l,nr,dr,fmt,vals],i)=>{
+      const R = 13+i, wash = i%2 ? BRAND_WASH : null;
+      put(cw, "A"+R, l, { align:"left", bold:true, fill:wash });
+      ["B","C","D"].forEach((col,j)=>
+        put(cw, col+R, F(`IFERROR(${col}${nr}/${col}${dr},0)`, vals[j]),
+          { numFmt:fmt, bold:j===2, fill:j===2 ? BRAND_TINT : wash }));
+    });
+
+    let CR = 13 + ratios.length + 2;
+    sectionHead(cw, CR, "A", "D", "SHARE OF THE MONTH");
+    headerRow(cw, CR+1, { A:"Split", B:"Awon", C:"Sutra", D:"Check" }, BRAND);
+    [["Share of total spend", 9, [div(A.spend,C.spend), div(S.spend,C.spend)]],
+     ["Share of total kilos", 12, [div(A.weight,C.weight), div(S.weight,C.weight)]],
+     ["Share of total leads", 10, [div(A.leads,C.leads), div(S.leads,C.leads)]]]
+      .forEach(([l,row,vals],i)=>{
+        const R = CR+2+i, wash = i%2 ? BRAND_WASH : null;
+        put(cw, "A"+R, l, { align:"left", bold:true, fill:wash });
+        put(cw, "B"+R, F(`IFERROR(B${row}/D${row},0)`, vals[0]), { numFmt:NF.pct, fill:wash });
+        put(cw, "C"+R, F(`IFERROR(C${row}/D${row},0)`, vals[1]), { numFmt:NF.pct, fill:wash });
+        put(cw, "D"+R, F(`B${R}+C${R}`, 1), { numFmt:NF.pct, fill:BRAND_TINT, bold:true });
+      });
+
+    /* ---------------- Read Me ---------------- */
+    const rm = wb.addWorksheet("Read Me");
+    rm.columns = [{width:4},{width:118}];
+    styleTitle(rm, "A1:B1", "MODEL NOTES — AWON & SUTRA MONTHLY FORECAST",
+      `${monthLabel}  ·  generated ${stamp}`);
+    const lines = [
+      ["h","How to use this workbook"],
+      ["p","Every figure is a live formula. Edit only the shaded input cells and the whole month recalculates."],
+      ["p","Awon inputs: city, organic leads, WA leads, on-ground and affiliate rows, drivers, days of operation, car capacity, kg per pickup, plus the rate assumptions block (paid $ per driver, paid CPL, branding $ per organic lead, WA $ per lead, pickup rate)."],
+      ["p","Sutra inputs: the same set, with paid budget entered directly instead of driver-led."],
+      ["p","Overhead inputs: cost type, line item, budget and Awon share % on the Overhead Allocation sheet."],
+      ["k","Shaded cells are inputs. White cells are formulas. Dark rows are totals."],
+      ["h","Model logic, unchanged from the source workbook"],
+      ["p","Paid budget = paid $ per driver × drivers   (Sutra: entered directly per city)"],
+      ["p","Paid leads = paid budget ÷ paid CPL"],
+      ["p","Branding budget = organic leads × branding $ per organic lead"],
+      ["p","WA budget = WA leads × WA $ per lead"],
+      ["p","Monthly budget = paid + branding + WA + on-ground + affiliate"],
+      ["p","Total leads = paid + organic + WA + on-ground + affiliate"],
+      ["p","Daily leads per driver = (total leads ÷ days of operation) ÷ drivers"],
+      ["p","Daily pickups per driver = daily leads per driver × pickup rate"],
+      ["p","Pickups per month = daily pickups per driver × days of operation × drivers"],
+      ["p","Expected monthly weight = pickups × average kg per pickup"],
+      ["p","CPL = spend ÷ leads     CAC = spend ÷ pickups     CPK = spend ÷ kilos"],
+      ["p","Car utilisation = (daily weight ÷ drivers) ÷ car capacity"],
+      ["h","Overhead treatment"],
+      ["p","Each overhead line is entered once with a cost type, a budget and an Awon share %. Sutra takes the remainder, so the two columns always reconcile to the item total."],
+      ["p","Each brand's overhead is then pushed down to its cities on driver share: city spend = city direct budget + brand overhead × (city drivers ÷ brand drivers). City CPL, CAC and CPK are struck on that full spend."],
+      ["h","Changes from _Forecast_2024-2026.xlsx"],
+      ["p","1. The August 2026 overhead table hardcoded several rows, so Awon $4,757.50 + Sutra $3,542.50 came to $8,300 against a stated total of $7,600. The share % now drives both columns."],
+      ["p","2. Sutra's overhead share never reached the Sutra sheet — cell E19 was blank, so Sutra CPL, CAC and CPK excluded overhead entirely."],
+      ["p","3. The combined block on every Awon tab since January 2026 still pointed at 'March 2026 Sutra Forecast' rather than the current month."],
+      ["p","4. City allocation multiplied the combined Awon + Sutra budget by Awon-only driver share. Each brand now allocates its own spend across its own fleet."],
+      ["p","5. Rate assumptions that were buried inside formulas (=1800*Q4, =F4/5.6, =S4*0.85) are now explicit input cells."],
+      ["p","Source: _Forecast_2024-2026.xlsx, tabs 'August 2026 Awon Forecast' and 'August 2026 Sutra Forecast'."]
+    ];
+    let rr = 4;
+    lines.forEach(([kind,text])=>{
+      if(kind==="h"){
+        rr++;
+        sectionHead(rm, rr, "A", "B", text.toUpperCase());
+      } else if(kind==="k"){
+        const c = rm.getCell("B"+rr);
+        rm.getCell("A"+rr).fill = fill(INPUT_FILL);
+        rm.getCell("A"+rr).border = box;
+        c.value = text;
+        c.font = { name:FONT, size:10, italic:true, color:{argb:DIM} };
+        c.alignment = { vertical:"middle", indent:1 };
+      } else {
+        const c = rm.getCell("B"+rr);
+        c.value = text;
+        c.font = { name:FONT, size:10, color:{argb:INK} };
+        c.alignment = { vertical:"middle", wrapText:false, indent:1 };
+      }
+      rr++;
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Awon_Sutra_Forecast_${monthLabel.replace(/\s+/g,"_")}.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    toast("Downloaded " + a.download);
+  } catch(err){
+    console.error(err);
+    toast("Export failed: " + err.message);
+  }
+}
+// ==== EXPORT END ===========================================================
+
+render();
+</script>
+</body>
+</html>
