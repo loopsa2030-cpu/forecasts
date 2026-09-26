@@ -19,7 +19,7 @@
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:'Readex Pro','Segoe UI',Tahoma,system-ui,sans-serif;
   font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.n,.stat .v,input[type=number]{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.n,.stat .v,input.numin{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 button{font-family:inherit}
 
 /* ---------- top & hero share the brand field ---------- */
@@ -46,13 +46,13 @@ button{font-family:inherit}
 .btn.ghost{background:var(--mint);color:var(--teal)}
 .btn.ghost:hover{background:#D6E6E3}
 
-.hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:22px clamp(16px,4vw,44px) 52px;position:relative;z-index:1}
+.hero{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding:22px clamp(16px,4vw,44px) 52px;position:relative;z-index:1}
 .stat{background:rgba(255,255,255,.08);border-radius:var(--r-lg);padding:18px 20px}
 .stat .l{font-size:13px;opacity:.8}
 .stat{min-width:0}
-.stat .v{display:block;font-size:clamp(22px,3.4vw,40px);overflow-wrap:anywhere;font-weight:600;letter-spacing:-.01em;line-height:1.15;margin-top:4px}
-.stat .v small{font-size:.42em;font-weight:400;opacity:.7;margin-inline-start:6px}
-.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 11px;border-radius:999px;margin-top:10px}
+.stat .v{display:block;font-size:clamp(22px,2.9vw,38px);font-weight:600;letter-spacing:-.01em;line-height:1.15;margin-top:4px}
+.stat .v small{font-size:.42em;font-weight:400;opacity:.7;margin-inline-start:6px;display:inline-block;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:500;line-height:1.45;padding:4px 11px;border-radius:999px;margin-top:10px}
 .pill.good{background:var(--good-bg);color:var(--good)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
 .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.soft{background:rgba(255,255,255,.14);color:#fff}
 
@@ -81,7 +81,7 @@ main{padding:18px clamp(16px,4vw,44px) 60px;max-width:1320px;margin-inline:auto}
 .sc{border:1.5px solid var(--line);border-radius:var(--r-md);padding:16px 18px}
 .sc.rec{border-color:var(--teal);background:var(--mint-2)}
 .sc .t{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-weight:600;font-size:14.5px}
-.sc .t .pill{margin-top:0;flex:none}
+.sc .t .pill{margin-top:0;flex:none;white-space:nowrap}
 .sc dl{display:grid;grid-template-columns:1fr auto;gap:6px 10px;margin:12px 0 0;font-size:14px}
 .sc dt{color:var(--muted)} .sc dd{margin:0;font-weight:600}
 .sc dd.good{color:var(--good)} .sc dd.bad{color:var(--bad)}
@@ -130,7 +130,7 @@ tr:last-child td{border-bottom:none}
 tr.tot td{background:var(--teal);color:#fff;font-weight:600}
 td.dim{color:var(--muted)}
 td.good{color:var(--good);font-weight:600} td.bad{color:var(--bad);font-weight:600}
-td input[type=number]{max-width:130px}
+td input.numin{max-width:130px}
 td input,td select{border:1.5px solid transparent;background:var(--mint-2);border-radius:8px;padding:6px 9px;font:inherit;font-size:14px;
   width:100%;min-width:84px;text-align:end;color:var(--ink)}
 td select{text-align:start;min-width:170px}
@@ -254,6 +254,10 @@ const SETTINGS_BASE = {
   kgRatio:1.29,          // first pickup ÷ returning pickup (cohorts: ~24.5 vs ~19)
   baseNewShare:0.302,    // new share over Aug-Sep 2026, when city kg per pickup was measured
   elasticity:0.25,       // cost per new donor rises with spend^0.25 around reference
+  // Lead layer (Odoo leads, grouped by the Awon Paid / Organic / Retention favourites)
+  leadRate:{ paid:0.877, org:0.786, wa:0.870 },  // pickups per lead; reproduces September leads by group
+  retPerNew:{ paid:1.40, org:0.43 },            // returning donors each group brings per new donor (August)
+  excludeCut:0.6,                               // exclusion audiences stop 60% of returning donors arriving through paid
   maxPPD:27,             // max pickups per driver per day (the old plan assumed ~27)
   firstYearKg:37.5,      // kg a new donor gives in year one (cohorts)
   halo:0,                // new donors per $1K paid-spend change vs September (correlational, off by default)
@@ -322,10 +326,15 @@ function computePlan(cities, channels, st, pools, overheadAwon, returnScale){
   const partnerSpend = partner ? partner.spend : 0, partnerNew = partner ? partner.donors : 0;
   const fixedRows = chRows.filter(c=>c.kind==="fixed");
   const otherSpend = fixedRows.reduce((a,c)=>a+c.spend,0) + capiSpend;
+  const orgRow = chRows.find(c=>c.id==="organic"), waRow = chRows.find(c=>c.id==="wanew");
+  const orgNewB = orgRow ? orgRow.donors : 0, orgSpendB = orgRow ? orgRow.spend : 0;
+  const waNewB = waRow ? waRow.donors : 0, waNewSpendB = waRow ? waRow.spend : 0;
   const haloNew = st.halo ? Math.max(-fixedRows.reduce((a,c)=>a+c.donors,0), st.halo * (paidSpend - st.refPaidSpend) / 1000) : 0;
   const otherNew = fixedRows.reduce((a,c)=>a+c.donors,0) + fastDonors + capiDonors + haloNew;
 
   const totalDrivers = cities.reduce((a,c)=>a+c.drivers,0);
+  const prAvg = cities.reduce((a,c)=>a+c.baseShare*c.pr,0) / (cities.reduce((a,c)=>a+c.baseShare,0) || 1);
+  const retPaidRatio = st.retPerNew.paid * (st.levers.exclude ? (1 - st.excludeCut) : 1);
   const rows = cities.map(c=>{
     const { kgNew, kgRet } = kgPair(c, st);
     const seg = returningFor(c, st, pools);
@@ -349,6 +358,24 @@ function computePlan(cities, channels, st, pools, overheadAwon, returnScale){
     const pickups = newDonors + retDonors;
     const kgNewTot = newDonors * kgNew, kgRetTot = retDonors * kgRet;
     const weight = kgNewTot + kgRetTot;
+    // ---- lead layer: which group each pickup came through, and the leads that needed ----
+    const idx = div(c.pr, prAvg) || 1;
+    const gPaidN = cPaidNew + cPartnerNew + capiDonors * c.baseShare;
+    const gOrgN = (orgNewB + haloNew) * c.baseShare;
+    const gWaN = waNewB * c.baseShare;
+    const fastC = fastDonors * c.baseShare;
+    const rPaid = Math.min(retPaidRatio * gPaidN, retDonors);
+    const rOrg = Math.min(st.retPerNew.org * gOrgN, retDonors - rPaid);
+    const rWa = retDonors - rPaid - rOrg;
+    const fastP = fastC * div(gPaidN, gPaidN + gOrgN), fastO = fastC - fastP;
+    const pickPaid = gPaidN + rPaid + fastP, pickOrg = gOrgN + rOrg + fastO, pickWa = gWaN + rWa;
+    const leadsPaid = div(gPaidN + rPaid, st.leadRate.paid * idx);
+    const leadsOrg = div(gOrgN + rOrg, st.leadRate.org * idx);
+    const leadsWa = div(pickWa, st.leadRate.wa * idx);
+    const leads = leadsPaid + leadsOrg + leadsWa;
+    const spendPaid = cPaidSpend + cPartnerSpend + capiSpend * c.baseShare;
+    const spendOrg = orgSpendB * c.baseShare;
+    const spendWa = waSpend + waNewSpendB * c.baseShare;
     const ohShare = overheadAwon * div(c.drivers, totalDrivers);
     const direct = newSpend + waSpend;
     const spend = direct + ohShare;
@@ -361,7 +388,11 @@ function computePlan(cities, channels, st, pools, overheadAwon, returnScale){
       ppd: div(div(pickups, c.days), c.drivers),
       driversNeeded: Math.max(Math.ceil(div(pickups, c.days * st.maxPPD) - 1e-9), Math.ceil(div(weight, c.days * c.carCap) - 1e-9)),
       carUse: div(div(div(weight, c.days), c.drivers), c.carCap),
-      leads: div(pickups, c.pr) };
+      idx, gPaidN, gOrgN, gWaN, fastC, rPaid, rOrg, rWa, pickPaid, pickOrg, pickWa,
+      leadsPaid, leadsOrg, leadsWa, leads, spendPaid, spendOrg, spendWa,
+      pickupRate: div(pickups, leads), cpl: div(direct, leads),
+      cplPaid: div(spendPaid, leadsPaid), cplOrg: div(spendOrg, leadsOrg), cplWa: div(spendWa, leadsWa),
+      dailyLeads: div(leads, st.daysInMonth), leadsPerDriverDay: div(div(leads, c.days), c.drivers) };
   });
   const s = k => rows.reduce((a,r)=>a+(r[k]||0),0);
   const T = { rows, chRows, fastDonors, capiDonors, capiSpend, haloNew,
@@ -369,8 +400,16 @@ function computePlan(cities, channels, st, pools, overheadAwon, returnScale){
     newDonors:s("newDonors"), retDonors:s("retDonors"), pickups:s("pickups"),
     newSpend:s("newSpend"), waSpend:s("waSpend"), direct:s("direct"), overhead:overheadAwon,
     spend:s("spend"), weight:s("weight"), kgNewTot:s("kgNewTot"), kgRetTot:s("kgRetTot"),
-    drivers:s("drivers"), driversNeeded:s("driversNeeded"), leads:s("leads") };
+    drivers:s("drivers"), driversNeeded:s("driversNeeded"), leads:s("leads"),
+    leadsPaid:s("leadsPaid"), leadsOrg:s("leadsOrg"), leadsWa:s("leadsWa"),
+    pickPaid:s("pickPaid"), pickOrg:s("pickOrg"), pickWa:s("pickWa"),
+    spendPaid:s("spendPaid"), spendOrg:s("spendOrg"), spendWa:s("spendWa"),
+    gPaidN:s("gPaidN"), gOrgN:s("gOrgN"), gWaN:s("gWaN"), fastN:s("fastC"),
+    rPaid:s("rPaid"), rOrg:s("rOrg"), rWa:s("rWa"), prAvg, retPaidRatio };
   T.cpk = div(T.spend, T.weight);
+  T.cpl = div(T.direct, T.leads); T.cplAll = div(T.spend, T.leads);
+  T.cplPaid = div(T.spendPaid, T.leadsPaid); T.cplOrg = div(T.spendOrg, T.leadsOrg); T.cplWa = div(T.spendWa, T.leadsWa);
+  T.pickupRate = div(T.pickups, T.leads); T.dailyLeads = div(T.leads, st.daysInMonth);
   T.newShare = div(T.newDonors, T.pickups);
   T.nCAC = div(T.newSpend, T.newDonors);
   T.rCAC = div(T.waSpend, T.retDonors);
@@ -509,10 +548,10 @@ const I18N = {
   en: {
     brandSub:"Monthly forecast", download:"Download Excel", monthPh:"Month",
     tabPlan:"Overview", tabBudget:"Budget", tabRet:"Returning", tabCity:"Cities",
-    kgU:"kg", kilos:"Kilos collected", cpk:"Cost per kg", newD:"New donors", retD:"Returning donors",
+    kgU:"kg", leadsT:"Leads", leadsPill:(c,r)=>`CPL ${c} · ${r} picked up`, kilos:"Kilos collected", cpk:"Cost per kg", newD:"New donors", retD:"Returning donors",
     vsAug:v=>`${v} vs September`, target:v=>`Target ${v}`, onTarget:"On target", over:v=>`${v} over target`,
     shareOf:(v,t)=>`${v} of donors · target ${t}`,
-    drivers:(need,have)=>`${need} drivers needed · ${have} on roster`,
+    drivers:(need,have)=>`${need} drivers needed (${have} now)`,
     targets:"Targets", tCpk:"Cost per kg", tShare:"New donor share",
     optimise:"Optimise", resetAug:"September run-rate",
     verdictOk:(c)=>`${c} per kg is on track.`,
@@ -537,7 +576,11 @@ const I18N = {
     wDriversOk:"<b>Fleet covers it</b> at the current roster",
     wPartner:"<b>Partner channel</b> isn't live yet",
     wReact:"<b>Maximum reactivation</b> has only been reached in bursts",
-    check:(a,b)=>`Model check: reproduces September (${a} new, ${b} returning).`,
+    check:(a,b,l)=>`Model check: reproduces September (${a} new, ${b} returning, ${l} leads).`,
+    leadsCard:"Leads by channel", leadsLead:"Leads are Odoo leads, grouped by your Awon Paid, Organic and Retention favourites. Each group converts to pickups at its own rate.",
+    grpPaid:"Paid", grpOrg:"Organic", grpWa:"WhatsApp & CRM", colLeads:"Leads", colCplS:"CPL", colPickRate:"Pickup rate", colNewD:"New donors", colRetD:"Returning donors",
+    set_leadRate_paid:"Pickups per paid lead", set_leadRate_org:"Pickups per organic lead", set_leadRate_wa:"Pickups per WhatsApp & CRM lead",
+    set_retPerNew_paid:"Returning per new donor, paid", set_retPerNew_org:"Returning per new donor, organic", set_excludeCut:"Paid returning stopped by exclusion",
     levers:"Levers", channels:"Channels",
     lv_exclude:"Exclude existing donors from ads", ls_exclude:"15% cheaper per new donor",
     lv_snapRefresh:"New Snapchat creative", ls_snapRefresh:"$34 → $28 per new donor",
@@ -565,10 +608,10 @@ const I18N = {
   ar: {
     brandSub:"التوقعات الشهرية", download:"تحميل Excel", monthPh:"الشهر",
     tabPlan:"نظرة عامة", tabBudget:"الميزانية", tabRet:"العائدون", tabCity:"المدن",
-    kgU:"كجم", kilos:"الكمية المجمعة", cpk:"تكلفة الكيلو", newD:"متبرعون جدد", retD:"متبرعون عائدون",
+    kgU:"كجم", leadsT:"العملاء المحتملون", leadsPill:(c,r)=>`${c} للعميل · استلام ${r}`, kilos:"الكمية المجمعة", cpk:"تكلفة الكيلو", newD:"متبرعون جدد", retD:"متبرعون عائدون",
     vsAug:v=>`${v} مقارنة بسبتمبر`, target:v=>`المستهدف ${v}`, onTarget:"ضمن المستهدف", over:v=>`أعلى من المستهدف بـ ${v}`,
-    shareOf:(v,t)=>`${v} من المتبرعين · المستهدف ${t}`,
-    drivers:(need,have)=>`المطلوب ${need} سائقاً · المتوفر ${have}`,
+    shareOf:(v,t)=>`${v} جدد · المستهدف ${t}`,
+    drivers:(need,have)=>`${need} سائقاً مطلوباً (${have} حالياً)`,
     targets:"المستهدفات", tCpk:"تكلفة الكيلو", tShare:"نسبة المتبرعين الجدد",
     optimise:"تحسين الخطة", resetAug:"معدل سبتمبر",
     verdictOk:(c)=>`تكلفة ${c} للكيلو ضمن المسار.`,
@@ -593,7 +636,11 @@ const I18N = {
     wDriversOk:"<b>الأسطول كافٍ</b> بالعدد الحالي",
     wPartner:"<b>قناة الشركاء</b> غير مفعّلة بعد",
     wReact:"<b>أقصى إعادة تنشيط</b> تحققت في حملات مؤقتة فقط",
-    check:(a,b)=>`التحقق من النموذج: يعيد نتائج سبتمبر (${a} جدد، ${b} عائدون).`,
+    check:(a,b,l)=>`التحقق من النموذج: يعيد نتائج سبتمبر (${a} جدد، ${b} عائدون، ${l} عميل محتمل).`,
+    leadsCard:"العملاء المحتملون حسب القناة", leadsLead:"العملاء المحتملون من Odoo، مجمّعون حسب مفضلات عون: المدفوع والعضوي والاستبقاء. كل مجموعة تتحول إلى استلامات بنسبتها الخاصة.",
+    grpPaid:"المدفوع", grpOrg:"العضوي", grpWa:"واتساب وإدارة العملاء", colLeads:"العملاء المحتملون", colCplS:"تكلفة العميل", colPickRate:"نسبة الاستلام", colNewD:"متبرعون جدد", colRetD:"متبرعون عائدون",
+    set_leadRate_paid:"الاستلام لكل عميل مدفوع", set_leadRate_org:"الاستلام لكل عميل عضوي", set_leadRate_wa:"الاستلام لكل عميل واتساب",
+    set_retPerNew_paid:"العائدون لكل متبرع جديد، مدفوع", set_retPerNew_org:"العائدون لكل متبرع جديد، عضوي", set_excludeCut:"العائدون المستبعدون من الإعلانات",
     levers:"أدوات التحسين", channels:"القنوات",
     lv_exclude:"استبعاد المتبرعين الحاليين من الإعلانات", ls_exclude:"أرخص 15٪ لكل متبرع جديد",
     lv_snapRefresh:"تجديد إعلانات سناب شات", ls_snapRefresh:"من 34$ إلى 28$ لكل متبرع جديد",
@@ -634,6 +681,7 @@ PRESETS.custom = clone(PRESETS.max); PRESETS.custom.label = "Custom";
 let cities = clone(CITY_BASE), channels = clone(CHANNELS_BASE), st = clone(SETTINGS_BASE),
     pools = clone(POOLS_BASE), overhead = clone(OVERHEAD_BASE);
 let P, SC = null, scTimer = null;
+const openSec = { overhead:false, settings:false };
 const ohAwon = () => overhead.reduce((a,r)=>a+r.total*r.awonPct, 0);
 const ohSutra = () => overhead.reduce((a,r)=>a+r.total*(1-r.awonPct), 0);
 
@@ -641,7 +689,8 @@ const ohSutra = () => overhead.reduce((a,r)=>a+r.total*(1-r.awonPct), 0);
 // pickups and kilos from Odoo received orders, new/returning split from the cohort analysis (Sep 1-20),
 // paid platform spend from Supermetrics (Sep 1-20, projected to 30 days).
 const BASE_ACTUAL = { label:"September 2026", window:"1-25 Sep", newDonors:5084, retDonors:12448,
-  pickups:17533, kgOdoo:376596, paidSpend:62610 };
+  pickups:17533, kgOdoo:376596, paidSpend:62610,
+  leadsPaid:6164, leadsOrg:3193, leadsWa:11052 };
 
 function baseSettings(){ const s = clone(st); s.preset = "baseline"; s.levers = { exclude:false, snapRefresh:false, fast:false, capi:false }; return s; }
 function basePlan(){ return computePlan(cities, CHANNELS_BASE, baseSettings(), pools, ohAwon()); }
@@ -698,6 +747,8 @@ function renderHero(){
       <span class="pill soft">${t("vsAug", N(sg(d)+pc0(Math.abs(d))))}</span></div>
     <div class="stat"><div class="l">${t("cpk")}</div><span class="v">${m3(P.cpk)}</span>
       <span class="pill ${cOk?"good":"bad"}">${cOk ? t("onTarget") : t("over", N(m3(P.cpk-st.targetCPK)))}</span></div>
+    <div class="stat"><div class="l">${t("leadsT")}</div><span class="v">${n0(P.leads)}</span>
+      <span class="pill soft">${t("leadsPill", N(m2(P.cpl)), N(pc0(P.pickupRate)))}</span></div>
     <div class="stat"><div class="l">${t("newD")}</div><span class="v">${n0(P.newDonors)}</span>
       <span class="pill ${sOk?"good":"warn"}">${t("shareOf", N(pc0(P.newShare)), N(pc0(st.targetNewShare)))}</span></div>
     <div class="stat"><div class="l">${t("retD")}</div><span class="v">${n0(P.retDonors)}</span>
@@ -712,18 +763,23 @@ function scCard(key, cls, pillCls, pillTxt, p, note){
       <dt>${t("kg")}</dt><dd class="n">${n0(p.weight)}</dd>
       <dt>${t("cpk")}</dt><dd class="n ${cOk?"good":"bad"}">${m3(p.cpk)}</dd>
       <dt>${t("share")}</dt><dd class="n ${sOk?"good":"bad"}">${pc0(p.newShare)}</dd>
+      <dt>${t("leadsT")}</dt><dd class="n">${n0(p.leads)}</dd>
     </dl>
     <div class="note">${note}</div></div>`;
 }
 
-function renderPlan(){
-  const el = document.getElementById("panel-plan");
+function ensurePlanShell(){
+  const panel = document.getElementById("panel-plan");
+  if(!document.getElementById("planTargets")) panel.innerHTML = '<div id="planTargets"></div><div id="planBody"></div>';
+}
+function renderTargets(){
+  ensurePlanShell();
   const targetsCard = `
     <div class="card">
       <div class="row" style="justify-content:space-between">
         <div class="row">
-          <div class="field"><label>${t("tCpk")}</label><input type="number" step="0.005" id="tCPK" value="${st.targetCPK}"></div>
-          <div class="field"><label>${t("tShare")}</label><input type="number" step="0.01" id="tShare" value="${st.targetNewShare}"></div>
+          <div class="field"><label>${t("tCpk")}</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" id="tCPK" value="${st.targetCPK}"></div>
+          <div class="field"><label>${t("tShare")}</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" id="tShare" value="${st.targetNewShare}"></div>
         </div>
         <div class="row">
           <button class="btn ghost" id="augBtn">${t("resetAug")}</button>
@@ -731,7 +787,13 @@ function renderPlan(){
         </div>
       </div>
     </div>`;
-  if(!SC){ el.innerHTML = targetsCard; return; }
+  document.getElementById("planTargets").innerHTML = targetsCard;
+}
+
+function renderPlan(){
+  ensurePlanShell();
+  const el = document.getElementById("planBody");
+  if(!SC){ el.innerHTML = ""; return; }
   const { base: base, A, B, C } = SC;
   const allOk = A.plan.newShare >= st.targetNewShare - 1e-6;
   const ratio = div(base.cpkNew, base.cpkRet);
@@ -755,7 +817,7 @@ function renderPlan(){
 
   const short = A.plan.driversNeeded - A.plan.drivers;
   const partner = A.channels.find(c=>c.id==="partner");
-  el.innerHTML = targetsCard + `
+  el.innerHTML = `
     <div class="card">
       <p class="verdict">${allOk ? t("verdictOk", N(m2(st.targetCPK))) : t("verdict", N(m2(st.targetCPK)), N(pc0(st.targetNewShare)))}</p>
       <p class="lead">${t("verdictBody", N(Math.round(ratio)))}</p>
@@ -770,7 +832,7 @@ function renderPlan(){
           ${partner && partner.spend>0 ? `<div class="w warn"><span class="dot"></span><span>${t("wPartner")}</span></div>` : ""}
           ${st.preset==="max" ? `<div class="w warn"><span class="dot"></span><span>${t("wReact")}</span></div>` : ""}
         </div>
-        <p class="foot" style="margin-top:14px">${t("check", N(n0(base.newDonors)), N(n0(base.retDonors)))}</p>
+        <p class="foot" style="margin-top:14px">${t("check", N(n0(base.newDonors)), N(n0(base.retDonors)), N(n0(base.leads)))}</p>
       </div>
     </div>`;
 }
@@ -784,10 +846,10 @@ function renderBudget(){
     const kg = c.donors * P.kgNewAvg;
     const cpk = div(c.spend, kg);
     return `<tr><td>${t("ch_"+c.id)}</td>
-      <td><input type="number" step="250" data-ch="${c.id}" data-key="spend" value="${Math.round(c.spend)}"></td>
+      <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-ch="${c.id}" data-key="spend" value="${Math.round(c.spend)}"></td>
       <td>${fixed ? `<span class="n dim">${c.donors>0?m2(div(c.spend,c.donors)):"-"}</span>`
-                  : `<input type="number" step="0.5" data-ch="${c.id}" data-key="cpnd" value="${c.cpnd}">`}</td>
-      <td class="n">${fixed ? `<input type="number" step="50" data-ch="${c.id}" data-key="donors" value="${Math.round(c.donors)}">` : n0(c.donors)}</td>
+                  : `<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-ch="${c.id}" data-key="cpnd" value="${c.cpnd}">`}</td>
+      <td class="n">${fixed ? `<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-ch="${c.id}" data-key="donors" value="${Math.round(c.donors)}">` : n0(c.donors)}</td>
       <td class="n">${c.spend>0 ? m3(cpk) : "-"}</td></tr>`;
   }).join("");
   const leverRows = [["fast",P.fastDonors,0],["capi",P.capiDonors,P.capiSpend],["halo",P.haloNew,0]]
@@ -796,8 +858,8 @@ function renderBudget(){
   const ohRows = overhead.map(r=>`<tr>
     <td><select data-oh="${r.id}" data-key="type">${OH_TYPES.map(x=>`<option value="${esc(x)}" ${x===r.type?"selected":""}>${esc(ohTypeName(x))}</option>`).join("")}</select></td>
     <td><input class="txt" data-oh="${r.id}" data-key="item" value="${esc(r.item)}"></td>
-    <td><input type="number" step="50" data-oh="${r.id}" data-key="total" value="${r.total}"></td>
-    <td><input type="number" step="0.05" min="0" max="1" data-oh="${r.id}" data-key="awonPct" value="${r.awonPct}"></td>
+    <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-oh="${r.id}" data-key="total" value="${r.total}"></td>
+    <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-oh="${r.id}" data-key="awonPct" value="${r.awonPct}"></td>
     <td class="n">${m0(r.total*r.awonPct)}</td>
     <td><button class="rm" data-ohrm="${r.id}" aria-label="remove">×</button></td></tr>`).join("");
 
@@ -813,7 +875,20 @@ function renderBudget(){
             <td class="n">${n0(P.newDonors)}</td><td class="n">${m3(P.cpkNew)}</td></tr>
         </tbody></table></div>
     </div>
-    <div class="card"><details><summary>${t("overhead")} · <span class="n">${m0(ohAwon())}</span></summary>
+    <div class="card"><h2>${t("leadsCard")}</h2><p class="lead">${t("leadsLead")}</p>
+      <div class="tbl"><table>
+        <thead><tr><th>${t("colChannel")}</th><th>${t("colSpend")}</th><th>${t("colLeads")}</th><th>${t("colCplS")}</th>
+          <th>${t("colPickRate")}</th><th>${t("colNewD")}</th><th>${t("colRetD")}</th></tr></thead>
+        <tbody>
+          ${[["grpPaid",P.spendPaid,P.leadsPaid,P.pickPaid,P.rPaid],["grpOrg",P.spendOrg,P.leadsOrg,P.pickOrg,P.rOrg],
+             ["grpWa",P.spendWa,P.leadsWa,P.pickWa,P.rWa]].map(([k,s,l,pk,rd])=>`<tr><td>${t(k)}</td>
+            <td class="n">${m0(s)}</td><td class="n"><b>${n0(l)}</b></td><td class="n">${m2(div(s,l))}</td>
+            <td class="n">${pc0(div(pk,l))}</td><td class="n">${n0(pk-rd)}</td><td class="n">${n0(rd)}</td></tr>`).join("")}
+          <tr class="tot"><td>${t("total")}</td><td class="n">${m0(P.direct)}</td><td class="n">${n0(P.leads)}</td><td class="n">${m2(P.cpl)}</td>
+            <td class="n">${pc0(P.pickupRate)}</td><td class="n">${n0(P.newDonors)}</td><td class="n">${n0(P.retDonors)}</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="card"><details data-sec="overhead" ${openSec.overhead?"open":""}><summary>${t("overhead")} · <span class="n">${m0(ohAwon())}</span></summary>
       <div class="inner"><p class="lead">${t("overheadLead")}</p>
         <div class="tbl"><table>
           <thead><tr><th>${t("colType")}</th><th>${t("colItem")}</th><th>${t("colBudget")}</th><th>${t("colAwonPct")}</th><th>${t("colAwon")}</th><th></th></tr></thead>
@@ -832,12 +907,14 @@ function renderRet(){
   SEGMENTS.forEach(s=>{ tot[s.key] = P.rows.reduce((a,r)=>{ const x = r.segRows.find(y=>y.key===s.key);
     return { donors:a.donors+x.donors, spend:a.spend+x.spend }; }, { donors:0, spend:0 }); });
   const rows = SEGMENTS.map(s=>`<tr><td>${t("seg_"+s.key)}</td>
-    <td><input type="number" step="100" data-pool="${s.key}" value="${pools[s.key]}"></td>
-    <td><input type="number" step="0.005" data-rate="${s.key}" value="${pr.rate[s.key]}"></td>
-    <td><input type="number" step="0.05" data-rcac="${s.key}" value="${pr.rcac[s.key]}"></td>
+    <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-pool="${s.key}" value="${pools[s.key]}"></td>
+    <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-rate="${s.key}" value="${pr.rate[s.key]}"></td>
+    <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-rcac="${s.key}" value="${pr.rcac[s.key]}"></td>
     <td class="n">${n0(tot[s.key].donors)}</td><td class="n">${m0(tot[s.key].spend)}</td></tr>`).join("");
-  const sets = ["served","kgRatio","baseNewShare","elasticity","maxPPD","firstYearKg","halo"].map(k=>
-    `<div class="field"><label>${t("set_"+k)}</label><input type="number" step="${k==="maxPPD"||k==="halo"?1:0.01}" data-set="${k}" value="${st[k]}"></div>`).join("");
+  const getSet = k => k.split(".").reduce((o,p)=>o[p], st);
+  const sets = ["leadRate.paid","leadRate.org","leadRate.wa","retPerNew.paid","retPerNew.org","excludeCut",
+                "served","kgRatio","baseNewShare","elasticity","maxPPD","firstYearKg","halo"].map(k=>
+    `<div class="field"><label>${t("set_"+k.replace(".","_"))}</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-set="${k}" value="${getSet(k)}"></div>`).join("");
   document.getElementById("panel-ret").innerHTML = `
     <div class="card"><h2>${t("program")}</h2><p class="lead">${t("programLead")}</p>
       <div class="seg">${seg}</div>
@@ -848,15 +925,16 @@ function renderRet(){
             <td class="n">${m2(P.rCAC)}</td><td class="n">${n0(P.retDonors)}</td><td class="n">${m0(P.waSpend)}</td></tr>
         </tbody></table></div>
     </div>
-    <div class="card"><details><summary>${t("settings")}</summary><div class="inner"><div class="row">${sets}</div></div></details></div>`;
+    <div class="card"><details data-sec="settings" ${openSec.settings?"open":""}><summary>${t("settings")}</summary><div class="inner"><div class="row">${sets}</div></div></details></div>`;
 }
 
 function renderCity(){
   const rows = P.rows.map(r=>{
     const shortC = r.driversNeeded > r.drivers;
     return `<tr><td>${esc(cityName(r.city))}</td>
-      <td><input type="number" step="1" data-city="${r.id}" data-key="drivers" value="${r.drivers}"></td>
-      <td><input type="number" step="1" data-city="${r.id}" data-key="days" value="${r.days}"></td>
+      <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-city="${r.id}" data-key="drivers" value="${r.drivers}"></td>
+      <td><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="numin" data-city="${r.id}" data-key="days" value="${r.days}"></td>
+      <td class="n"><b>${n0(r.leads)}</b></td><td class="n">${m2(r.cpl)}</td>
       <td class="n">${n0(r.newDonors)}</td><td class="n">${n0(r.retDonors)}</td>
       <td class="n">${n0(r.weight)}</td><td class="n">${m0(r.spend)}</td>
       <td class="n ${r.cpk<=st.targetCPK?"good":"bad"}">${m3(r.cpk)}</td>
@@ -865,10 +943,10 @@ function renderCity(){
   document.getElementById("panel-city").innerHTML = `
     <div class="card"><h2>${t("cityTitle")}</h2><p class="lead">${t("cityLead")}</p>
       <div class="tbl"><table>
-        <thead><tr><th>${t("colCity")}</th><th>${t("colDrivers")}</th><th>${t("colDays")}</th><th>${t("colNewS")}</th><th>${t("colRetS")}</th>
+        <thead><tr><th>${t("colCity")}</th><th>${t("colDrivers")}</th><th>${t("colDays")}</th><th>${t("colLeads")}</th><th>${t("colCplS")}</th><th>${t("colNewS")}</th><th>${t("colRetS")}</th>
           <th>${t("colKg")}</th><th>${t("colSpendS")}</th><th>${t("colCpk")}</th><th>${t("colNeed")}</th></tr></thead>
         <tbody>${rows}
-          <tr class="tot"><td>${t("total")}</td><td class="n">${n0(P.drivers)}</td><td></td><td class="n">${n0(P.newDonors)}</td>
+          <tr class="tot"><td>${t("total")}</td><td class="n">${n0(P.drivers)}</td><td></td><td class="n">${n0(P.leads)}</td><td class="n">${m2(P.cpl)}</td><td class="n">${n0(P.newDonors)}</td>
             <td class="n">${n0(P.retDonors)}</td><td class="n">${n0(P.weight)}</td><td class="n">${m0(P.spend)}</td>
             <td class="n">${m3(P.cpk)}</td><td class="n">${n0(P.driversNeeded)}</td></tr>
         </tbody></table></div>
@@ -878,22 +956,38 @@ function renderCity(){
 function render(){
   compute();
   applyLang();
-  renderHero(); renderBudget(); renderRet(); renderCity(); renderPlan();
+  renderHero(); renderTargets(); renderBudget(); renderRet(); renderCity(); renderPlan();
   scheduleScenarios();
 }
 
 // ================= events =================
 function rerenderKeeping(el, selector){
-  const raw = el.value; let pos = null;
-  try { pos = el.selectionStart; } catch(_){}
+  const raw = el.value;
+  const start = el.selectionStart, end = el.selectionEnd, dir = el.selectionDirection;
   render();
   const again = document.querySelector(selector);
-  if(again){ again.value = raw; again.focus(); if(pos!==null){ try{ again.setSelectionRange(pos,pos); }catch(_){} } }
+  if(!again) return;
+  again.value = raw;
+  again.focus({ preventScroll:true });
+  if(start !== null && start !== undefined){ try { again.setSelectionRange(start, end, dir || "none"); } catch(_){} }
 }
-const num = v => v === "" ? 0 : Number(v);
+const num = v => {
+  const s = String(v)
+    .replace(/[\u0660-\u0669]/g, d => d.charCodeAt(0) - 0x0660)
+    .replace(/[\u06F0-\u06F9]/g, d => d.charCodeAt(0) - 0x06F0)
+    .replace(/\u066B/g, ".")
+    .replace(/[,\u066C\s]/g, "")
+    .replace(/[^0-9.\-]/g, "");
+  const n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+};
+
+// "", "-", "." or a trailing decimal mark ("0.", "0٫") are still being typed: leave the box alone
+const incomplete = s => /^\s*$/.test(s) || /^[-.\u066B]$/.test(s.trim()) || /[.\u066B]$/.test(s.trim());
 
 document.addEventListener("input", e=>{
   const x = e.target, d = x.dataset;
+  if(x.classList && x.classList.contains("numin") && incomplete(x.value)) return;
   if(d.ch){ const c = channels.find(y=>y.id===d.ch); if(!c) return; c[d.key] = num(x.value); rerenderKeeping(x, `[data-ch="${d.ch}"][data-key="${d.key}"]`); }
   else if(d.city){ const c = cities.find(y=>y.id===Number(d.city)); if(!c) return; c[d.key] = num(x.value); rerenderKeeping(x, `[data-city="${d.city}"][data-key="${d.key}"]`); }
   else if(d.pool){ pools[d.pool] = num(x.value); rerenderKeeping(x, `[data-pool="${d.pool}"]`); }
@@ -902,7 +996,7 @@ document.addEventListener("input", e=>{
     if(d.rate) PRESETS.custom.rate[d.rate] = num(x.value); else PRESETS.custom.rcac[d.rcac] = num(x.value);
     rerenderKeeping(x, d.rate ? `[data-rate="${d.rate}"]` : `[data-rcac="${d.rcac}"]`);
   }
-  else if(d.set){ st[d.set] = num(x.value); rerenderKeeping(x, `[data-set="${d.set}"]`); }
+  else if(d.set){ const path = d.set.split("."), last = path.pop(); path.reduce((o,p)=>o[p], st)[last] = num(x.value); rerenderKeeping(x, `[data-set="${d.set}"]`); }
   else if(d.oh && x.tagName !== "SELECT"){
     const r = overhead.find(y=>y.id===Number(d.oh)); if(!r) return;
     r[d.key] = d.key==="item" ? x.value : num(x.value); rerenderKeeping(x, `[data-oh="${d.oh}"][data-key="${d.key}"]`);
@@ -912,8 +1006,11 @@ document.addEventListener("input", e=>{
   else if(x.id==="monthLabel"){ st.monthLabel = x.value; }
 });
 
+document.addEventListener("toggle", e=>{ const s = e.target && e.target.dataset && e.target.dataset.sec; if(s) openSec[s] = e.target.open; }, true);
+
 document.addEventListener("change", e=>{
   const x = e.target, d = x.dataset;
+  if(x.classList && x.classList.contains("numin") && incomplete(x.value)){ render(); return; }
   if(d.oh && x.tagName==="SELECT"){ const r = overhead.find(y=>y.id===Number(d.oh)); if(r){ r.type = x.value; render(); } }
 });
 
@@ -1058,10 +1155,13 @@ async function exportExcel(){
     const q = n => `'${n}'`;
     const A_ = a => `${q(AS)}!$B$${a}`;
     // Assumptions cell map
-    const AR = { cpk:5, share:6, days:9, served:10, ratio:11, s0:12, elast:13, ppd:14, excl:15, fyk:16 };
+    const AR = { cpk:5, share:6, days:9, served:10, ratio:11, s0:12, elast:13, ppd:14, excl:15, fyk:16,
+                 rPaid:19, rOrg:20, rWa:21, kPaid:22, kOrg:23, kExcl:24 };
+    const LB = "Lead Build";
 
     // Order sheets as users will read them
     const ws  = wb.addWorksheet(mainName, { views:[{ state:"frozen", xSplit:2, ySplit:5 }] });
+    const lb  = wb.addWorksheet(LB, { views:[{ state:"frozen", xSplit:1, ySplit:5 }] });
     const rp  = wb.addWorksheet(RP, { views:[{ state:"frozen", ySplit:12 }] });
     const nc  = wb.addWorksheet(NC, { views:[{ state:"frozen", ySplit:5 }] });
     const as  = wb.addWorksheet(AS);
@@ -1070,7 +1170,7 @@ async function exportExcel(){
     const rm  = wb.addWorksheet("Read Me");
 
     /* ---------------- Assumptions ---------------- */
-    as.columns = [{width:40},{width:16},{width:16},{width:14},{width:14},{width:16},{width:16},{width:14},{width:60}];
+    as.columns = [{width:44},{width:14},{width:13},{width:12},{width:13},{width:15},{width:12},{width:13},{width:13},{width:60}];
     styleTitle(as, "A1:I1", `ASSUMPTIONS & TARGETS · ${ML.toUpperCase()}`, `Generated ${stamp}  ·  shaded cells are inputs and drive every other sheet`);
     sectionHead(as, 4, "A", "C", "TARGETS");
     put(as, "A5", "Target cost per kg", { align:"left", bold:true }); put(as, "B5", st.targetCPK, { fill:INPUT_FILL, numFmt:NF.money3, bold:true });
@@ -1088,17 +1188,27 @@ async function exportExcel(){
         put(as, "A"+R, l, { align:"left" }); put(as, "B"+R, v, { fill:INPUT_FILL, numFmt:f });
         as.getCell("C"+R).value = n; as.getCell("C"+R).font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; });
     as.mergeCells("C9:I9"); for(let r=10;r<=16;r++) as.mergeCells(`C${r}:I${r}`);
+    sectionHead(as, 18, "A", "C", "LEAD SETTINGS (ODOO LEADS, AWON FAVOURITES)");
+    [["Pickups per paid lead", st.leadRate.paid, NF.pct, "Calibrated so the model reproduces September's paid leads"],
+     ["Pickups per organic lead", st.leadRate.org, NF.pct, "Organic, on-ground and affiliate favourites"],
+     ["Pickups per WhatsApp & CRM lead", st.leadRate.wa, NF.pct, "Awon Retention Leads favourite"],
+     ["Returning donors per new donor, paid", st.retPerNew.paid, '0.00', "August: 58% of paid-ad pickups were returning donors"],
+     ["Returning donors per new donor, organic", st.retPerNew.org, '0.00', "August: 30% of organic pickups were returning donors"],
+     ["Paid returning kept after exclusion", st.levers.exclude ? 1 - st.excludeCut : 1, NF.pct, st.levers.exclude ? "Exclusion audiences stop 60% of existing donors arriving through ads" : "No exclusion audiences"]]
+      .forEach(([l,v,f,n],i)=>{ const R = 19+i;
+        put(as, "A"+R, l, { align:"left" }); put(as, "B"+R, v, { fill:INPUT_FILL, numFmt:f });
+        as.getCell("C"+R).value = n; as.getCell("C"+R).font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; as.mergeCells(`C${R}:J${R}`); });
 
     const { base: aug, A, B, C: Cs, req, steps } = SC;
-    sectionHead(as, 18, "A", "I", "SCENARIOS: THE THREE TARGETS TESTED TOGETHER");
-    headerRow(as, 19, { A:"Scenario", B:"Kilos", C:"Cost per kg", D:"New share", E:"New donors", F:"Returning donors", G:"Spend", H:"Drivers needed", I:"Verdict" }, BRAND);
+    sectionHead(as, 26, "A", "J", "SCENARIOS: THE THREE TARGETS TESTED TOGETHER");
+    headerRow(as, 27, { A:"Scenario", B:"Kilos", C:"Cost per kg", D:"New share", E:"New donors", F:"Returning donors", G:"Leads", H:"Spend", I:"Drivers needed", J:"Verdict" }, BRAND);
     const scen = [
       ["A · Most kilos at target cost per kg (recommended)", A.plan, "Meets cost per kg; new share below target because returning grows faster"],
       ["B · Both ratio targets", B ? B.plan : null, B ? `Meets both ratios only by cutting returning to ${pc0(B.returnScale)} of plan and collecting ${n0(B.plan.weight)} kg` : "Infeasible"],
       ["C · Target new share with maximum returning", Cs.plan, Cs.capped ? `Every channel at ceiling reaches only ${pc(Cs.plan.newShare)}; cost per kg ${m3(Cs.plan.cpk)}` : `Cost per kg ${m3(Cs.plan.cpk)}`],
       ["September run-rate (reference)", aug, "Reproduces September: 5.1K new, 12.4K returning"]
     ];
-    scen.forEach(([l,p,v],i)=>{ const R = 20+i, wash = i%2 ? BRAND_WASH : null;
+    scen.forEach(([l,p,v],i)=>{ const R = 28+i, wash = i%2 ? BRAND_WASH : null;
       put(as, "A"+R, l, { align:"left", bold:true, fill: i===0 ? "FFE3F0E8" : wash });
       if(p){
         put(as, "B"+R, p.weight, { numFmt:NF.num, fill:wash });
@@ -1106,19 +1216,20 @@ async function exportExcel(){
         put(as, "D"+R, p.newShare, { numFmt:NF.pct, bold:true, colour: p.newShare>=st.targetNewShare-1e-6?GREEN_OK:RED_BAD, fill:wash });
         put(as, "E"+R, p.newDonors, { numFmt:NF.num, fill:wash });
         put(as, "F"+R, p.retDonors, { numFmt:NF.num, fill:wash });
-        put(as, "G"+R, p.spend, { numFmt:NF.money, fill:wash });
-        put(as, "H"+R, p.driversNeeded, { numFmt:NF.num, fill:wash });
+        put(as, "G"+R, p.leads, { numFmt:NF.num, fill:wash });
+        put(as, "H"+R, p.spend, { numFmt:NF.money, fill:wash });
+        put(as, "I"+R, p.driversNeeded, { numFmt:NF.num, fill:wash });
       }
-      put(as, "I"+R, v, { align:"left", fill:wash });
+      put(as, "J"+R, v, { align:"left", fill:wash });
     });
-    put(as, "A25", "nCAC needed to hit both ratios at maximum returning", { align:"left", bold:true });
-    put(as, "B25", req.ncac, { numFmt:NF.money2, bold:true, colour:RED_BAD });
-    as.getCell("C25").value = `vs ${m2(aug.nCAC)} in September and ${m2(A.plan.nCAC)} in plan A, for ${n0(req.N)} new donors`;
-    as.getCell("C25").font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; as.mergeCells("C25:I25");
+    put(as, "A33", "nCAC needed to hit both ratios at maximum returning", { align:"left", bold:true });
+    put(as, "B33", req.ncac, { numFmt:NF.money2, bold:true, colour:RED_BAD });
+    as.getCell("C33").value = `vs ${m2(aug.nCAC)} in September and ${m2(A.plan.nCAC)} in plan A, for ${n0(req.N)} new donors`;
+    as.getCell("C33").font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; as.mergeCells("C33:J33");
 
-    sectionHead(as, 27, "A", "I", "FROM SEPTEMBER TO PLAN A, ONE CHANGE AT A TIME");
-    headerRow(as, 28, { A:"Step", B:"Kilos", C:"Change", D:"Cost per kg", E:"New donors", F:"Returning donors", G:"Spend" }, BRAND);
-    steps.forEach((s,i)=>{ const R = 29+i, wash = i%2 ? BRAND_WASH : null;
+    sectionHead(as, 35, "A", "J", "FROM SEPTEMBER TO PLAN A, ONE CHANGE AT A TIME");
+    headerRow(as, 36, { A:"Step", B:"Kilos", C:"Change", D:"Cost per kg", E:"New donors", F:"Returning donors", G:"Spend", H:"Leads" }, BRAND);
+    steps.forEach((s,i)=>{ const R = 37+i, wash = i%2 ? BRAND_WASH : null;
       put(as, "A"+R, s.label, { align:"left", bold:true, fill:wash });
       put(as, "B"+R, s.plan.weight, { numFmt:NF.num, fill:wash });
       put(as, "C"+R, i ? F(`B${R}-B${R-1}`, s.plan.weight - steps[i-1].plan.weight) : "", { numFmt:NF.num, fill:wash });
@@ -1126,6 +1237,7 @@ async function exportExcel(){
       put(as, "E"+R, s.plan.newDonors, { numFmt:NF.num, fill:wash });
       put(as, "F"+R, s.plan.retDonors, { numFmt:NF.num, fill:wash });
       put(as, "G"+R, s.plan.spend, { numFmt:NF.money, fill:wash });
+      put(as, "H"+R, s.plan.leads, { numFmt:NF.num, fill:wash });
     });
 
     /* ---------------- New Donor Channels ---------------- */
@@ -1153,12 +1265,12 @@ async function exportExcel(){
       put(nc, "K"+R, c.cap, { numFmt:NF.money, fill:wash });
     });
     const extra = [];
-    fixd.forEach(c=>extra.push({ name:c.name, type:"volume", spend:c.spend, donors:c.donors }));
-    if(P.fastDonors) extra.push({ name:"48-hour first-pickup guarantee", type:"lever", spend:0, donors:P.fastDonors });
-    if(P.capiDonors) extra.push({ name:"Click-to-WhatsApp + Conversions API", type:"lever", spend:P.capiSpend, donors:P.capiDonors });
-    if(P.haloNew) extra.push({ name:"Halo effect on organic (sensitivity)", type:"lever", spend:0, donors:P.haloNew });
-    const fixedStart = r;
-    extra.forEach((c,i)=>{ const R = r++, wash = (scal.length+i)%2 ? BRAND_WASH : null;
+    fixd.forEach(c=>extra.push({ id:c.id, name:c.name, type:"volume", spend:c.spend, donors:c.donors }));
+    if(P.fastDonors) extra.push({ id:"fast", name:"48-hour first-pickup guarantee", type:"lever", spend:0, donors:P.fastDonors });
+    if(P.capiDonors) extra.push({ id:"capi", name:"Click-to-WhatsApp + Conversions API", type:"lever", spend:P.capiSpend, donors:P.capiDonors });
+    if(P.haloNew) extra.push({ id:"halo", name:"Halo effect on organic (sensitivity)", type:"lever", spend:0, donors:P.haloNew });
+    const fixedStart = r; const exRowOf = {};
+    extra.forEach((c,i)=>{ const R = r++, wash = (scal.length+i)%2 ? BRAND_WASH : null; exRowOf[c.id] = R;
       put(nc, "A"+R, c.name, { align:"left", bold:true, fill:wash });
       put(nc, "B"+R, c.type, { align:"left", fill:wash });
       put(nc, "C"+R, c.spend, { numFmt:NF.money, fill:INPUT_FILL });
@@ -1219,7 +1331,7 @@ async function exportExcel(){
       put(rp, "H"+R, F(`SUM(D${R}:G${R})`, c.retDonors), { numFmt:NF.num, bold:true, fill:wash });
       put(rp, "I"+R, F(`D${R}*$D$6+E${R}*$D$7+F${R}*$D$8+G${R}*$D$9`, c.waSpend), { numFmt:NF.money, fill:wash });
       put(rp, "J"+R, F(`IFERROR(I${R}/H${R},0)`, c.rCAC), { numFmt:NF.money2, fill:wash });
-      put(rp, "K"+R, F(`H${R}*'${mainName}'!X${6+i}`, c.kgRetTot), { numFmt:NF.num, fill:wash });
+      put(rp, "K"+R, F(`H${R}*'${mainName}'!Z${6+i}`, c.kgRetTot), { numFmt:NF.num, fill:wash });
     });
     const RPT = RP0 + P.rows.length;
     put(rp, "A"+RPT, "TOTAL", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
@@ -1254,153 +1366,248 @@ async function exportExcel(){
     put(oa, "F"+OT, F(`SUM(F5:F${OT-1})`, ohSutra()), { bold:true, colour:WHITE, fill:BRAND_DEEP, numFmt:NF.money });
     const OH = `${q(OA)}!$E$${OT}`;
 
-    /* ---------------- Main forecast (familiar layout) ---------------- */
-    ws.columns = [{width:11},{width:13},{width:13},{width:12},{width:11},{width:12},{width:10},
-                  {width:12},{width:12},{width:12},{width:12},{width:13},{width:13},{width:12},{width:10},
-                  {width:12},{width:10},{width:3},
-                  {width:9},{width:9},{width:11},{width:12},{width:11},{width:11},{width:12},{width:12},{width:14},{width:13},
-                  {width:11},{width:11},{width:11},{width:11},{width:11},{width:11},{width:3},
-                  {width:11},{width:11},{width:13},{width:11}];
-    styleTitle(ws, "A1:AM1", `AWON · ${ML.toUpperCase()} FORECAST`,
-      `Generated ${stamp}  ·  new & returning donor model, anchored on September 2026  ·  shaded cells are inputs, everything else is a live formula  ·  targets: ${m2(st.targetCPK)}/kg, ${pc0(st.targetNewShare)} new`);
-    bandRow(ws, 4, [["C","G","DONORS"],["H","O","NEW DONORS"],["P","Q","RETURNING"],["S","AH","LOGISTICS & EFFICIENCY"],["AJ","AM","CITY INPUTS"]], BRAND);
-    headerRow(ws, 5, { A:"Initiative", B:"City", C:"Monthly Budget", D:"Total Donors / Month", E:"New Donors", F:"Returning Donors", G:"New Share",
-      H:"Paid Budget", I:"Paid New Donors", J:"Partner Budget", K:"Partner New Donors", L:"Organic & WA Budget", M:"Organic & WA New Donors",
-      N:"New Budget", O:"nCAC", P:"WA Budget", Q:"rCAC",
-      S:"Drivers", T:"Days of Op.", U:"Pickups / Month", V:"Daily Pickups / Driver", W:"New kg / Pickup", X:"Returning kg / Pickup",
-      Y:"New kg", Z:"Returning kg", AA:"Expected Monthly Weight", AB:"Expected Daily Weight", AC:"Car Capacity kg", AD:"Car Utilisation",
-      AE:"Drivers Needed", AF:"Leads Needed", AG:"Direct CPK", AH:"Direct CAC",
-      AJ:"Paid Budget Share", AK:"Share of Donor Base", AL:"Measured kg / Pickup", AM:"Pickup Rate" }, BRAND);
+    /* ---------------- Lead Build (per city: donors by lead group → leads and spend) ---------------- */
     const H0 = 6, n = P.rows.length, LAST = H0+n-1, TOT = LAST+1;
+    const RPr = i => RP0 + i;                 // city row on Returning Pools
+    const LBr = i => 6 + i;                   // city row on Lead Build
+    const MR  = i => H0 + i;                  // city row on the main tab
+    const NCH = id => exRowOf[id] ? NCr("H", exRowOf[id]) : "0";
+    const NCC = id => exRowOf[id] ? NCr("C", exRowOf[id]) : "0";
+    lb.columns = [{width:13},{width:10},{width:10},{width:10},{width:10},{width:12},{width:12},{width:12},{width:11},{width:12},
+                  {width:12},{width:12},{width:13},{width:11},{width:11},{width:11},{width:11},{width:11},{width:11},{width:12},{width:12},{width:12}];
+    styleTitle(lb, "A1:V1", `LEAD BUILD · ${ML.toUpperCase()}`,
+      "Each pickup is traced to the lead group it came through (Odoo favourites: Paid, Organic, Retention = WhatsApp & CRM), then divided by that group's pickup rate to give leads");
+    bandRow(lb, 4, [["B","E","CITY"],["F","I","NEW DONORS BY GROUP"],["J","M","RETURNING DONORS BY GROUP"],["N","P","PICKUPS"],["Q","S","LEADS"],["T","V","SPEND"]], BRAND);
+    headerRow(lb, 5, { A:"City", B:"Paid budget share", C:"Share of donor base", D:"Pickup rate (MTD)", E:"Conversion index",
+      F:"Paid", G:"Organic", H:"WhatsApp new", I:"48-hour pickup", J:"Returning total", K:"Via paid", L:"Via organic", M:"Via WhatsApp & CRM",
+      N:"Paid", O:"Organic", P:"WhatsApp & CRM", Q:"Paid", R:"Organic", S:"WhatsApp & CRM", T:"Paid", U:"Organic", V:"WhatsApp & CRM" }, BRAND);
+    const lbC = `$C$${LBr(0)}:$C$${LBr(n-1)}`, lbD = `$D$${LBr(0)}:$D$${LBr(n-1)}`;
+    P.rows.forEach((c,i)=>{ const R = LBr(i), wash = i%2 ? BRAND_WASH : null;
+      put(lb, "A"+R, c.city, { align:"left", bold:true, fill:wash });
+      put(lb, "B"+R, F(`'${mainName}'!AK${MR(i)}`, c.paidShare), { numFmt:NF.pct, fill:wash });
+      put(lb, "C"+R, F(`${q(RP)}!B${RPr(i)}`, c.baseShare), { numFmt:NF.pct, fill:wash });
+      put(lb, "D"+R, F(`'${mainName}'!AN${MR(i)}`, c.pr), { numFmt:NF.pct, fill:wash });
+      put(lb, "E"+R, F(`IFERROR(D${R}/(SUMPRODUCT(${lbC},${lbD})/SUM(${lbC})),1)`, c.idx), { numFmt:'0.00', fill:wash });
+      put(lb, "F"+R, F(`${NCr("H",RPAID)}*B${R}+(${NCr("H",RPART)}+${NCH("capi")})*C${R}`, c.gPaidN), { numFmt:NF.num, fill:wash });
+      put(lb, "G"+R, F(`(${NCH("organic")}+${NCH("halo")})*C${R}`, c.gOrgN), { numFmt:NF.num, fill:wash });
+      put(lb, "H"+R, F(`${NCH("wanew")}*C${R}`, c.gWaN), { numFmt:NF.num, fill:wash });
+      put(lb, "I"+R, F(`${NCH("fast")}*C${R}`, c.fastC), { numFmt:NF.num, fill:wash });
+      put(lb, "J"+R, F(`${q(RP)}!H${RPr(i)}`, c.retDonors), { numFmt:NF.num, bold:true, fill:wash });
+      put(lb, "K"+R, F(`MIN(${A_(AR.kPaid)}*${A_(AR.kExcl)}*F${R},J${R})`, c.rPaid), { numFmt:NF.num, fill:wash });
+      put(lb, "L"+R, F(`MIN(${A_(AR.kOrg)}*G${R},J${R}-K${R})`, c.rOrg), { numFmt:NF.num, fill:wash });
+      put(lb, "M"+R, F(`J${R}-K${R}-L${R}`, c.rWa), { numFmt:NF.num, fill:wash });
+      put(lb, "N"+R, F(`F${R}+K${R}+I${R}*IFERROR(F${R}/(F${R}+G${R}),0)`, c.pickPaid), { numFmt:NF.num, fill:wash });
+      put(lb, "O"+R, F(`G${R}+L${R}+I${R}-I${R}*IFERROR(F${R}/(F${R}+G${R}),0)`, c.pickOrg), { numFmt:NF.num, fill:wash });
+      put(lb, "P"+R, F(`H${R}+M${R}`, c.pickWa), { numFmt:NF.num, fill:wash });
+      put(lb, "Q"+R, F(`IFERROR((F${R}+K${R})/(${A_(AR.rPaid)}*E${R}),0)`, c.leadsPaid), { numFmt:NF.num, bold:true, fill:wash });
+      put(lb, "R"+R, F(`IFERROR((G${R}+L${R})/(${A_(AR.rOrg)}*E${R}),0)`, c.leadsOrg), { numFmt:NF.num, bold:true, fill:wash });
+      put(lb, "S"+R, F(`IFERROR(P${R}/(${A_(AR.rWa)}*E${R}),0)`, c.leadsWa), { numFmt:NF.num, bold:true, fill:wash });
+      put(lb, "T"+R, F(`${NCr("C",RPAID)}*B${R}+(${NCr("C",RPART)}+${NCC("capi")})*C${R}`, c.spendPaid), { numFmt:NF.money, fill:wash });
+      put(lb, "U"+R, F(`${NCC("organic")}*C${R}`, c.spendOrg), { numFmt:NF.money, fill:wash });
+      put(lb, "V"+R, F(`${q(RP)}!I${RPr(i)}+${NCC("wanew")}*C${R}`, c.spendWa), { numFmt:NF.money, fill:wash });
+    });
+    const LBT = LBr(n), lbDark = { bold:true, colour:WHITE, fill:BRAND_DEEP };
+    put(lb, "A"+LBT, "TOTAL", { ...lbDark, align:"left" });
+    ["B","C"].forEach(col=>put(lb, col+LBT, F(`SUM(${col}${LBr(0)}:${col}${LBr(n-1)})`, 1), { ...lbDark, numFmt:NF.pct }));
+    put(lb, "D"+LBT, F(`IFERROR(SUMPRODUCT(${lbC},${lbD})/SUM(${lbC}),0)`, P.prAvg), { ...lbDark, numFmt:NF.pct });
+    put(lb, "E"+LBT, "", lbDark);
+    [["F",P.gPaidN],["G",P.gOrgN],["H",P.gWaN],["I",P.fastN],["J",P.retDonors],["K",P.rPaid],["L",P.rOrg],["M",P.rWa],
+     ["N",P.pickPaid],["O",P.pickOrg],["P",P.pickWa],["Q",P.leadsPaid],["R",P.leadsOrg],["S",P.leadsWa]]
+      .forEach(([col,v])=>put(lb, col+LBT, F(`SUM(${col}${LBr(0)}:${col}${LBr(n-1)})`, v), { ...lbDark, numFmt:NF.num }));
+    [["T",P.spendPaid],["U",P.spendOrg],["V",P.spendWa]]
+      .forEach(([col,v])=>put(lb, col+LBT, F(`SUM(${col}${LBr(0)}:${col}${LBr(n-1)})`, v), { ...lbDark, numFmt:NF.money }));
+    const lbRow = LBT + 2;
+    sectionHead(lb, lbRow, "A", "H", "BY LEAD GROUP");
+    headerRow(lb, lbRow+1, { A:"Group", B:"Spend", C:"Leads", D:"CPL", E:"Pickups", F:"Pickup rate", G:"Share of leads", H:"Share of spend" }, BRAND);
+    [["Paid","T","Q","N",P.spendPaid,P.leadsPaid,P.pickPaid],["Organic","U","R","O",P.spendOrg,P.leadsOrg,P.pickOrg],
+     ["WhatsApp & CRM","V","S","P",P.spendWa,P.leadsWa,P.pickWa]].forEach(([g,sc,lc,pc_,sv,lv,pv],i)=>{
+      const R = lbRow+2+i, wash = i%2 ? BRAND_WASH : null;
+      put(lb, "A"+R, g, { align:"left", bold:true, fill:wash });
+      put(lb, "B"+R, F(`${sc}${LBT}`, sv), { numFmt:NF.money, fill:wash });
+      put(lb, "C"+R, F(`${lc}${LBT}`, lv), { numFmt:NF.num, bold:true, fill:wash });
+      put(lb, "D"+R, F(`IFERROR(B${R}/C${R},0)`, div(sv,lv)), { numFmt:NF.money2, bold:true, fill:wash });
+      put(lb, "E"+R, F(`${pc_}${LBT}`, pv), { numFmt:NF.num, fill:wash });
+      put(lb, "F"+R, F(`IFERROR(E${R}/C${R},0)`, div(pv,lv)), { numFmt:NF.pct, fill:wash });
+      put(lb, "G"+R, F(`IFERROR(C${R}/$C$${lbRow+5},0)`, div(lv,P.leads)), { numFmt:NF.pct, fill:wash });
+      put(lb, "H"+R, F(`IFERROR(B${R}/$B$${lbRow+5},0)`, div(sv,P.direct)), { numFmt:NF.pct, fill:wash });
+    });
+    const LGT = lbRow+5;
+    put(lb, "A"+LGT, "TOTAL", { ...lbDark, align:"left" });
+    put(lb, "B"+LGT, F(`SUM(B${lbRow+2}:B${lbRow+4})`, P.direct), { ...lbDark, numFmt:NF.money });
+    put(lb, "C"+LGT, F(`SUM(C${lbRow+2}:C${lbRow+4})`, P.leads), { ...lbDark, numFmt:NF.num });
+    put(lb, "D"+LGT, F(`IFERROR(B${LGT}/C${LGT},0)`, P.cpl), { ...lbDark, numFmt:NF.money2 });
+    put(lb, "E"+LGT, F(`SUM(E${lbRow+2}:E${lbRow+4})`, P.pickups), { ...lbDark, numFmt:NF.num });
+    put(lb, "F"+LGT, F(`IFERROR(E${LGT}/C${LGT},0)`, P.pickupRate), { ...lbDark, numFmt:NF.pct });
+    put(lb, "G"+LGT, F(`SUM(G${lbRow+2}:G${lbRow+4})`, 1), { ...lbDark, numFmt:NF.pct });
+    put(lb, "H"+LGT, F(`SUM(H${lbRow+2}:H${lbRow+4})`, 1), { ...lbDark, numFmt:NF.pct });
+    const lbNote = lb.getCell(`A${LGT+2}`);
+    lbNote.value = "Paid CPL uses all platform spend, including awareness campaigns. The live dashboard moves the awareness share to Organic, so its paid CPL reads lower.";
+    lbNote.font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; lb.mergeCells(`A${LGT+2}:V${LGT+2}`);
+    const LBq = (col,i) => `${q(LB)}!${col}${LBr(i)}`;
+
+    /* ---------------- Main forecast (the old forecast's layout, leads first) ---------------- */
+    ws.columns = [{width:11},{width:13},{width:13},{width:12},{width:10},{width:12},{width:11},{width:12},{width:11},{width:12},{width:11},{width:10},
+                  {width:11},{width:11},{width:11},{width:9},{width:9},{width:9},{width:9},{width:3},
+                  {width:9},{width:9},{width:10},{width:11},{width:10},{width:10},{width:11},{width:11},{width:13},{width:12},
+                  {width:10},{width:10},{width:10},{width:10},{width:10},{width:3},
+                  {width:11},{width:11},{width:11},{width:11}];
+    styleTitle(ws, "A1:AN1", `AWON · ${ML.toUpperCase()} FORECAST`,
+      `Generated ${stamp}  ·  leads, new & returning donors, anchored on September 2026  ·  shaded cells are inputs, everything else is a live formula  ·  targets: ${m2(st.targetCPK)}/kg, ${pc0(st.targetNewShare)} new`);
+    bandRow(ws, 4, [["C","L","MARKETING: LEADS"],["M","S","DONORS"],["U","AI","LOGISTICS & EFFICIENCY"],["AK","AN","CITY INPUTS"]], BRAND);
+    headerRow(ws, 5, { A:"Initiative", B:"City", C:"Monthly Budget", D:"Total Leads / Month", E:"Daily Leads",
+      F:"Paid Budget", G:"Paid Leads", H:"Organic Budget", I:"Organic Leads", J:"WhatsApp & CRM Budget", K:"WhatsApp & CRM Leads", L:"Direct CPL",
+      M:"Pickups / Month", N:"New Donors", O:"Returning Donors", P:"New Share", Q:"Pickup Rate", R:"nCAC", S:"rCAC",
+      U:"Drivers", V:"Days of Op.", W:"Daily Leads / Driver", X:"Daily Pickups / Driver", Y:"New kg / Pickup", Z:"Returning kg / Pickup",
+      AA:"New kg", AB:"Returning kg", AC:"Expected Monthly Weight", AD:"Expected Daily Weight", AE:"Car Capacity kg", AF:"Car Utilisation",
+      AG:"Drivers Needed", AH:"Direct CPK", AI:"Direct CAC",
+      AK:"Paid Budget Share", AL:"Share of Donor Base", AM:"Measured kg / Pickup", AN:"Pickup Rate (MTD)" }, BRAND);
     const denom = `(${A_(AR.s0)}*${A_(AR.ratio)}+1-${A_(AR.s0)})`;
-    P.rows.forEach((c,i)=>{ const R = H0+i, wash = i%2 ? BRAND_WASH : null, rpr = RP0+i;
+    P.rows.forEach((c,i)=>{ const R = MR(i), wash = i%2 ? BRAND_WASH : null, rpr = RPr(i);
       put(ws, "A"+R, i===0 ? "Awon" : "", { align:"left", bold:true, fill:wash });
       put(ws, "B"+R, c.city, { align:"left", bold:true, fill:wash });
-      put(ws, "C"+R, F(`N${R}+P${R}`, c.direct), { numFmt:NF.money, bold:true, fill:wash });
-      put(ws, "D"+R, F(`E${R}+F${R}`, c.pickups), { numFmt:NF.num, bold:true, fill:wash });
-      put(ws, "E"+R, F(`I${R}+K${R}+M${R}`, c.newDonors), { numFmt:NF.num, fill:wash });
-      put(ws, "F"+R, F(`${q(RP)}!H${rpr}`, c.retDonors), { numFmt:NF.num, fill:wash });
-      put(ws, "G"+R, F(`IFERROR(E${R}/D${R},0)`, c.newShare), { numFmt:NF.pct, fill:wash });
-      put(ws, "H"+R, F(`${NCr("C",RPAID)}*AJ${R}`, c.paidSpend), { numFmt:NF.money, fill:wash });
-      put(ws, "I"+R, F(`${NCr("H",RPAID)}*AJ${R}`, c.paidNew), { numFmt:NF.num, fill:wash });
-      put(ws, "J"+R, F(`${NCr("C",RPART)}*AK${R}`, c.partnerSpend), { numFmt:NF.money, fill:wash });
-      put(ws, "K"+R, F(`${NCr("H",RPART)}*AK${R}`, c.partnerNew), { numFmt:NF.num, fill:wash });
-      put(ws, "L"+R, F(`${NCr("C",ROTH)}*AK${R}`, c.otherSpend), { numFmt:NF.money, fill:wash });
-      put(ws, "M"+R, F(`${NCr("H",ROTH)}*AK${R}`, c.otherNew), { numFmt:NF.num, fill:wash });
-      put(ws, "N"+R, F(`H${R}+J${R}+L${R}`, c.newSpend), { numFmt:NF.money, fill:wash });
-      put(ws, "O"+R, F(`IFERROR(N${R}/E${R},0)`, c.nCAC), { numFmt:NF.money2, fill:wash });
-      put(ws, "P"+R, F(`${q(RP)}!I${rpr}`, c.waSpend), { numFmt:NF.money, fill:wash });
-      put(ws, "Q"+R, F(`IFERROR(P${R}/F${R},0)`, c.rCAC), { numFmt:NF.money2, fill:wash });
-      put(ws, "S"+R, c.drivers, { numFmt:NF.num, fill:INPUT_FILL });
-      put(ws, "T"+R, c.days, { numFmt:NF.num, fill:INPUT_FILL });
-      put(ws, "U"+R, F(`D${R}`, c.pickups), { numFmt:NF.num, bold:true, fill:wash });
-      put(ws, "V"+R, F(`IFERROR(U${R}/T${R}/S${R},0)`, c.ppd), { numFmt:NF.num1, fill:wash });
-      put(ws, "W"+R, F(`AL${R}*${A_(AR.ratio)}/${denom}`, c.kgNew), { numFmt:NF.num1, fill:wash });
-      put(ws, "X"+R, F(`AL${R}/${denom}`, c.kgRet), { numFmt:NF.num1, fill:wash });
-      put(ws, "Y"+R, F(`E${R}*W${R}`, c.kgNewTot), { numFmt:NF.num, fill:wash });
-      put(ws, "Z"+R, F(`F${R}*X${R}`, c.kgRetTot), { numFmt:NF.num, fill:wash });
-      put(ws, "AA"+R, F(`Y${R}+Z${R}`, c.weight), { numFmt:NF.num, bold:true, fill:wash });
-      put(ws, "AB"+R, F(`IFERROR(AA${R}/T${R},0)`, c.dailyWeight), { numFmt:NF.num, fill:wash });
-      put(ws, "AC"+R, c.carCap, { numFmt:NF.num, fill:INPUT_FILL });
-      put(ws, "AD"+R, F(`IFERROR(AB${R}/S${R}/AC${R},0)`, c.carUse), { numFmt:NF.pct, fill:wash });
-      put(ws, "AE"+R, F(`MAX(ROUNDUP(U${R}/(T${R}*${A_(AR.ppd)}),0),ROUNDUP(AA${R}/(T${R}*AC${R}),0))`, c.driversNeeded),
+      put(ws, "C"+R, F(`F${R}+H${R}+J${R}`, c.direct), { numFmt:NF.money, bold:true, fill:wash });
+      put(ws, "D"+R, F(`G${R}+I${R}+K${R}`, c.leads), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "E"+R, F(`IFERROR(D${R}/${A_(AR.days)},0)`, c.dailyLeads), { numFmt:NF.num1, fill:wash });
+      put(ws, "F"+R, F(LBq("T",i), c.spendPaid), { numFmt:NF.money, fill:wash });
+      put(ws, "G"+R, F(LBq("Q",i), c.leadsPaid), { numFmt:NF.num, fill:wash });
+      put(ws, "H"+R, F(LBq("U",i), c.spendOrg), { numFmt:NF.money, fill:wash });
+      put(ws, "I"+R, F(LBq("R",i), c.leadsOrg), { numFmt:NF.num, fill:wash });
+      put(ws, "J"+R, F(LBq("V",i), c.spendWa), { numFmt:NF.money, fill:wash });
+      put(ws, "K"+R, F(LBq("S",i), c.leadsWa), { numFmt:NF.num, fill:wash });
+      put(ws, "L"+R, F(`IFERROR(C${R}/D${R},0)`, c.cpl), { numFmt:NF.money2, bold:true, fill:wash });
+      put(ws, "M"+R, F(`N${R}+O${R}`, c.pickups), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "N"+R, F(`${LBq("F",i)}+${LBq("G",i)}+${LBq("H",i)}+${LBq("I",i)}`, c.newDonors), { numFmt:NF.num, fill:wash });
+      put(ws, "O"+R, F(LBq("J",i), c.retDonors), { numFmt:NF.num, fill:wash });
+      put(ws, "P"+R, F(`IFERROR(N${R}/M${R},0)`, c.newShare), { numFmt:NF.pct, fill:wash });
+      put(ws, "Q"+R, F(`IFERROR(M${R}/D${R},0)`, c.pickupRate), { numFmt:NF.pct, fill:wash });
+      put(ws, "R"+R, F(`IFERROR((C${R}-${q(RP)}!I${rpr})/N${R},0)`, c.nCAC), { numFmt:NF.money2, fill:wash });
+      put(ws, "S"+R, F(`IFERROR(${q(RP)}!I${rpr}/O${R},0)`, c.rCAC), { numFmt:NF.money2, fill:wash });
+      put(ws, "U"+R, c.drivers, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "V"+R, c.days, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "W"+R, F(`IFERROR(D${R}/V${R}/U${R},0)`, c.leadsPerDriverDay), { numFmt:NF.num1, fill:wash });
+      put(ws, "X"+R, F(`IFERROR(M${R}/V${R}/U${R},0)`, c.ppd), { numFmt:NF.num1, fill:wash });
+      put(ws, "Y"+R, F(`AM${R}*${A_(AR.ratio)}/${denom}`, c.kgNew), { numFmt:NF.num1, fill:wash });
+      put(ws, "Z"+R, F(`AM${R}/${denom}`, c.kgRet), { numFmt:NF.num1, fill:wash });
+      put(ws, "AA"+R, F(`N${R}*Y${R}`, c.kgNewTot), { numFmt:NF.num, fill:wash });
+      put(ws, "AB"+R, F(`O${R}*Z${R}`, c.kgRetTot), { numFmt:NF.num, fill:wash });
+      put(ws, "AC"+R, F(`AA${R}+AB${R}`, c.weight), { numFmt:NF.num, bold:true, fill:wash });
+      put(ws, "AD"+R, F(`IFERROR(AC${R}/V${R},0)`, c.dailyWeight), { numFmt:NF.num, fill:wash });
+      put(ws, "AE"+R, c.carCap, { numFmt:NF.num, fill:INPUT_FILL });
+      put(ws, "AF"+R, F(`IFERROR(AD${R}/U${R}/AE${R},0)`, c.carUse), { numFmt:NF.pct, fill:wash });
+      put(ws, "AG"+R, F(`MAX(ROUNDUP(M${R}/(V${R}*${A_(AR.ppd)}),0),ROUNDUP(AC${R}/(V${R}*AE${R}),0))`, c.driversNeeded),
         { numFmt:NF.num, bold: c.driversNeeded>c.drivers, colour: c.driversNeeded>c.drivers ? RED_BAD : INK, fill:wash });
-      put(ws, "AF"+R, F(`IFERROR(U${R}/AM${R},0)`, c.leads), { numFmt:NF.num, fill:wash });
-      put(ws, "AG"+R, F(`IFERROR(C${R}/AA${R},0)`, div(c.direct, c.weight)), { numFmt:NF.money3, fill:wash });
-      put(ws, "AH"+R, F(`IFERROR(C${R}/D${R},0)`, div(c.direct, c.pickups)), { numFmt:NF.money2, fill:wash });
-      put(ws, "AJ"+R, c.paidShare, { numFmt:NF.pct, fill:INPUT_FILL });
-      put(ws, "AK"+R, c.baseShare, { numFmt:NF.pct, fill:INPUT_FILL });
-      put(ws, "AL"+R, c.kgBlend, { numFmt:NF.num1, fill:INPUT_FILL });
-      put(ws, "AM"+R, c.pr, { numFmt:NF.pct, fill:INPUT_FILL });
+      put(ws, "AH"+R, F(`IFERROR(C${R}/AC${R},0)`, div(c.direct, c.weight)), { numFmt:NF.money3, fill:wash });
+      put(ws, "AI"+R, F(`IFERROR(C${R}/M${R},0)`, div(c.direct, c.pickups)), { numFmt:NF.money2, fill:wash });
+      put(ws, "AK"+R, c.paidShare, { numFmt:NF.pct, fill:INPUT_FILL });
+      put(ws, "AL"+R, F(`${q(RP)}!B${rpr}`, c.baseShare), { numFmt:NF.pct, fill:wash });
+      put(ws, "AM"+R, c.kgBlend, { numFmt:NF.num1, fill:INPUT_FILL });
+      put(ws, "AN"+R, c.pr, { numFmt:NF.pct, fill:INPUT_FILL });
     });
     const rg = col => `${col}${H0}:${col}${LAST}`;
     const TD = (addr, val, fmt) => put(ws, addr, val, { numFmt:fmt, bold:true, colour:WHITE, fill:BRAND_DEEP });
     put(ws, "A"+TOT, "TOTAL", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
     put(ws, "B"+TOT, "/ blended", { bold:true, colour:WHITE, fill:BRAND_DEEP, align:"left" });
-    [["C",P.direct,NF.money],["D",P.pickups,NF.num],["E",P.newDonors,NF.num],["F",P.retDonors,NF.num],
-     ["H",P.paidSpend,NF.money],["I",P.paidNew,NF.num],["J",P.partnerSpend,NF.money],["K",P.partnerNew,NF.num],
-     ["L",P.otherSpend,NF.money],["M",P.otherNew,NF.num],["N",P.newSpend,NF.money],["P",P.waSpend,NF.money],
-     ["S",P.drivers,NF.num],["U",P.pickups,NF.num],["Y",P.kgNewTot,NF.num],["Z",P.kgRetTot,NF.num],
-     ["AA",P.weight,NF.num],["AB",P.rows.reduce((a,c)=>a+c.dailyWeight,0),NF.num],["AE",P.driversNeeded,NF.num],["AF",P.leads,NF.num],
-     ["AJ",P.rows.reduce((a,c)=>a+c.paidShare,0),NF.pct],["AK",P.rows.reduce((a,c)=>a+c.baseShare,0),NF.pct]]
-      .forEach(([c,v,f])=>TD(c+TOT, F(`SUM(${rg(c)})`, v), f));
-    TD("G"+TOT, F(`IFERROR(E${TOT}/D${TOT},0)`, P.newShare), NF.pct);
-    TD("O"+TOT, F(`IFERROR(N${TOT}/E${TOT},0)`, P.nCAC), NF.money2);
-    TD("Q"+TOT, F(`IFERROR(P${TOT}/F${TOT},0)`, P.rCAC), NF.money2);
     const avgDays = P.rows.reduce((a,c)=>a+c.days,0)/n;
-    TD("T"+TOT, F(`AVERAGE(${rg("T")})`, avgDays), NF.num1);
-    TD("V"+TOT, F(`IFERROR(U${TOT}/T${TOT}/S${TOT},0)`, div(div(P.pickups,avgDays),P.drivers)), NF.num1);
-    TD("W"+TOT, F(`IFERROR(Y${TOT}/E${TOT},0)`, P.kgNewAvg), NF.num1);
-    TD("X"+TOT, F(`IFERROR(Z${TOT}/F${TOT},0)`, P.kgRetAvg), NF.num1);
-    TD("AC"+TOT, F(`AVERAGE(${rg("AC")})`, P.rows.reduce((a,c)=>a+c.carCap,0)/n), NF.num);
-    TD("AD"+TOT, "", NF.pct);
-    TD("AG"+TOT, F(`IFERROR(C${TOT}/AA${TOT},0)`, div(P.direct,P.weight)), NF.money3);
-    TD("AH"+TOT, F(`IFERROR(C${TOT}/D${TOT},0)`, div(P.direct,P.pickups)), NF.money2);
-    ["AL","AM"].forEach(c=>TD(c+TOT, "", NF.num));
+    [["C",P.direct,NF.money],["D",P.leads,NF.num],["F",P.spendPaid,NF.money],["G",P.leadsPaid,NF.num],["H",P.spendOrg,NF.money],
+     ["I",P.leadsOrg,NF.num],["J",P.spendWa,NF.money],["K",P.leadsWa,NF.num],["M",P.pickups,NF.num],["N",P.newDonors,NF.num],
+     ["O",P.retDonors,NF.num],["U",P.drivers,NF.num],["AA",P.kgNewTot,NF.num],["AB",P.kgRetTot,NF.num],["AC",P.weight,NF.num],
+     ["AD",P.rows.reduce((a,c)=>a+c.dailyWeight,0),NF.num],["AG",P.driversNeeded,NF.num],
+     ["AK",P.rows.reduce((a,c)=>a+c.paidShare,0),NF.pct],["AL",P.rows.reduce((a,c)=>a+c.baseShare,0),NF.pct]]
+      .forEach(([c,v,f])=>TD(c+TOT, F(`SUM(${rg(c)})`, v), f));
+    TD("E"+TOT, F(`IFERROR(D${TOT}/${A_(AR.days)},0)`, P.dailyLeads), NF.num1);
+    TD("L"+TOT, F(`IFERROR(C${TOT}/D${TOT},0)`, P.cpl), NF.money2);
+    TD("P"+TOT, F(`IFERROR(N${TOT}/M${TOT},0)`, P.newShare), NF.pct);
+    TD("Q"+TOT, F(`IFERROR(M${TOT}/D${TOT},0)`, P.pickupRate), NF.pct);
+    TD("R"+TOT, F(`IFERROR((C${TOT}-${q(RP)}!I${RPT})/N${TOT},0)`, P.nCAC), NF.money2);
+    TD("S"+TOT, F(`IFERROR(${q(RP)}!I${RPT}/O${TOT},0)`, P.rCAC), NF.money2);
+    TD("V"+TOT, F(`AVERAGE(${rg("V")})`, avgDays), NF.num1);
+    TD("W"+TOT, F(`IFERROR(D${TOT}/V${TOT}/U${TOT},0)`, div(div(P.leads,avgDays),P.drivers)), NF.num1);
+    TD("X"+TOT, F(`IFERROR(M${TOT}/V${TOT}/U${TOT},0)`, div(div(P.pickups,avgDays),P.drivers)), NF.num1);
+    TD("Y"+TOT, F(`IFERROR(AA${TOT}/N${TOT},0)`, P.kgNewAvg), NF.num1);
+    TD("Z"+TOT, F(`IFERROR(AB${TOT}/O${TOT},0)`, P.kgRetAvg), NF.num1);
+    TD("AE"+TOT, F(`AVERAGE(${rg("AE")})`, P.rows.reduce((a,c)=>a+c.carCap,0)/n), NF.num);
+    TD("AF"+TOT, "", NF.pct);
+    TD("AH"+TOT, F(`IFERROR(C${TOT}/AC${TOT},0)`, div(P.direct,P.weight)), NF.money3);
+    TD("AI"+TOT, F(`IFERROR(C${TOT}/M${TOT},0)`, div(P.direct,P.pickups)), NF.money2);
+    ["AM","AN"].forEach(c=>TD(c+TOT, "", NF.num));
     ws.getRow(TOT).height = 20;
+    ws.pageSetup = { orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
+                     margins:{ left:0.3, right:0.3, top:0.4, bottom:0.4, header:0.2, footer:0.2 } };
 
-    // Now that the total row is known, point channel kg at the forecast's average new kg/pickup
+    // Channel mix, as on the old forecast tabs
+    const MX = TOT + 2;
+    put(ws, "A"+MX, "Share of total", { align:"left", bold:true });
+    [["F","C",div(P.spendPaid,P.direct)],["G","D",div(P.leadsPaid,P.leads)],["H","C",div(P.spendOrg,P.direct)],
+     ["I","D",div(P.leadsOrg,P.leads)],["J","C",div(P.spendWa,P.direct)],["K","D",div(P.leadsWa,P.leads)],
+     ["N","M",P.newShare],["O","M",1-P.newShare]]
+      .forEach(([c,b,v])=>put(ws, c+MX, F(`IFERROR(${c}${TOT}/${b}${TOT},0)`, v), { numFmt:NF.pct, fill:BRAND_TINT, bold:true }));
+
+    // Point the channel sheet's kg columns at the forecast's average new kg per pickup
     nc.eachRow(row=>row.eachCell(cell=>{
       if(cell.value && typeof cell.value==="object" && cell.value.formula && cell.value.formula.includes("__KGNEW__"))
-        cell.value = { formula: cell.value.formula.replace(/__KGNEW__/g, `'${mainName}'!$W$${TOT}`), result: cell.value.result };
+        cell.value = { formula: cell.value.formula.replace(/__KGNEW__/g, `'${mainName}'!$Y$${TOT}`), result: cell.value.result };
     }));
 
     // Executive summary
-    let E0 = TOT + 3;
-    sectionHead(ws, E0, "A", "F", "EXECUTIVE SUMMARY AGAINST TARGET");
+    let E0 = MX + 3;
+    sectionHead(ws, E0, "A", "G", "EXECUTIVE SUMMARY AGAINST TARGET");
     const exec = [
       ["Target cost per kg", A_(AR.cpk), st.targetCPK, NF.money3],
-      ["Forecast cost per kg (all-in)", `IFERROR((C${TOT}+${OH})/AA${TOT},0)`, P.cpk, NF.money3, "cpk"],
+      ["Forecast cost per kg (all-in)", `IFERROR((C${TOT}+${OH})/AC${TOT},0)`, P.cpk, NF.money3, "cpk"],
       ["Target new-donor share", A_(AR.share), st.targetNewShare, NF.pct],
-      ["Forecast new-donor share", `G${TOT}`, P.newShare, NF.pct, "share"],
-      ["New donors", `E${TOT}`, P.newDonors, NF.num],
-      ["Returning donors", `F${TOT}`, P.retDonors, NF.num],
-      ["Total pickups", `U${TOT}`, P.pickups, NF.num],
-      ["Target weight (kg)", `AA${TOT}`, P.weight, NF.num],
-      ["  From new donors", `Y${TOT}`, P.kgNewTot, NF.num],
-      ["  From returning donors", `Z${TOT}`, P.kgRetTot, NF.num],
+      ["Forecast new-donor share", `P${TOT}`, P.newShare, NF.pct, "share"],
+      ["Total leads", `D${TOT}`, P.leads, NF.num],
+      ["  Paid leads", `G${TOT}`, P.leadsPaid, NF.num],
+      ["  Organic leads", `I${TOT}`, P.leadsOrg, NF.num],
+      ["  WhatsApp & CRM leads", `K${TOT}`, P.leadsWa, NF.num],
+      ["Direct CPL", `L${TOT}`, P.cpl, NF.money2],
+      ["Marketing CPL (all-in)", `IFERROR((C${TOT}+${OH})/D${TOT},0)`, P.cplAll, NF.money2],
+      ["Paid CPL", `IFERROR(F${TOT}/G${TOT},0)`, P.cplPaid, NF.money2],
+      ["Pickup rate", `Q${TOT}`, P.pickupRate, NF.pct],
+      ["Total pickups", `M${TOT}`, P.pickups, NF.num],
+      ["  New donors", `N${TOT}`, P.newDonors, NF.num],
+      ["  Returning donors", `O${TOT}`, P.retDonors, NF.num],
+      ["Target weight (kg)", `AC${TOT}`, P.weight, NF.num],
       ["Direct marketing budget", `C${TOT}`, P.direct, NF.money],
-      ["  New-donor budget", `N${TOT}`, P.newSpend, NF.money],
-      ["  WhatsApp reactivation", `P${TOT}`, P.waSpend, NF.money],
       ["Marketing overhead (Awon share)", OH, P.overhead, NF.money],
       ["Total spending", `C${TOT}+${OH}`, P.spend, NF.money],
-      ["nCAC: (paid + organic) ÷ new donors", `O${TOT}`, P.nCAC, NF.money2],
-      ["rCAC: WhatsApp spend ÷ returning donors", `Q${TOT}`, P.rCAC, NF.money2],
-      ["Cost per first-pickup kg", `IFERROR(N${TOT}/Y${TOT},0)`, P.cpkNew, NF.money3],
-      ["Cost per returning kg", `IFERROR(P${TOT}/Z${TOT},0)`, P.cpkRet, NF.money3],
-      ["Drivers on roster", `S${TOT}`, P.drivers, NF.num],
-      ["Drivers needed", `AE${TOT}`, P.driversNeeded, NF.num, "drv"]
+      ["nCAC: (paid + organic) ÷ new donors", `R${TOT}`, P.nCAC, NF.money2],
+      ["rCAC: WhatsApp spend ÷ returning donors", `S${TOT}`, P.rCAC, NF.money2],
+      ["Drivers on roster", `U${TOT}`, P.drivers, NF.num],
+      ["Drivers needed", `AG${TOT}`, P.driversNeeded, NF.num, "drv"]
     ];
     exec.forEach(([l,f,v,fmt,flag],i)=>{ const R = E0+1+i, wash = i%2 ? BRAND_WASH : null;
-      ws.mergeCells(`A${R}:B${R}`);
+      ws.mergeCells(`A${R}:D${R}`);
       put(ws, "A"+R, l, { align:"left", fill:wash, bold: !l.startsWith("  ") });
       let colour = INK;
       if(flag==="cpk") colour = v <= st.targetCPK+1e-6 ? GREEN_OK : RED_BAD;
       if(flag==="share") colour = v >= st.targetNewShare-1e-6 ? GREEN_OK : RED_BAD;
       if(flag==="drv") colour = v <= P.drivers ? GREEN_OK : RED_BAD;
-      put(ws, "C"+R, F(f, v), { numFmt:fmt, bold:true, colour, fill:wash });
-      if(flag==="cpk") put(ws, "D"+R, F(`IF(C${R}<=C${R-1},"On target","Above target")`, v<=st.targetCPK+1e-6?"On target":"Above target"), { align:"left", bold:true, colour, fill:wash });
-      if(flag==="share") put(ws, "D"+R, F(`IF(C${R}>=C${R-1},"On target","Below target")`, v>=st.targetNewShare-1e-6?"On target":"Below target"), { align:"left", bold:true, colour, fill:wash });
-      if(flag==="drv") put(ws, "D"+R, F(`IF(C${R}<=C${R-1},"Covered","Short "&(C${R}-C${R-1}))`, v<=P.drivers?"Covered":"Short "+(v-P.drivers)), { align:"left", bold:true, colour, fill:wash });
+      put(ws, "E"+R, F(f, v), { numFmt:fmt, bold:true, colour, fill:wash });
+      if(flag){ ws.mergeCells(`F${R}:G${R}`); }
+      if(flag==="cpk") put(ws, "F"+R, F(`IF(E${R}<=E${R-1},"On target","Above target")`, v<=st.targetCPK+1e-6?"On target":"Above target"), { align:"left", bold:true, colour, fill:wash });
+      if(flag==="share") put(ws, "F"+R, F(`IF(E${R}>=E${R-1},"On target","Below target")`, v>=st.targetNewShare-1e-6?"On target":"Below target"), { align:"left", bold:true, colour, fill:wash });
+      if(flag==="drv") put(ws, "F"+R, F(`IF(E${R}<=E${R-1},"Covered","Short "&(E${R}-E${R-1}))`, v<=P.drivers?"Covered":"Short "+(v-P.drivers)), { align:"left", bold:true, colour, fill:wash });
     });
 
     // City spend with overhead on driver share
     let C0 = E0 + exec.length + 3;
-    sectionHead(ws, C0, "A", "J", "CITY SPEND: DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE");
+    sectionHead(ws, C0, "A", "K", "CITY SPEND: DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE");
     headerRow(ws, C0+1, { A:"City", B:"Drivers", C:"Driver share", D:"Direct budget", E:"Overhead carried", F:"City spend",
-      G:"Kilos", H:"CPK (all-in)", I:"New share", J:"vs target CPK" }, BRAND);
-    P.rows.forEach((c,i)=>{ const R = C0+2+i, src = H0+i, wash = i%2 ? BRAND_WASH : null;
+      G:"Leads", H:"CPL (all-in)", I:"Kilos", J:"CPK (all-in)", K:"vs target CPK" }, BRAND);
+    P.rows.forEach((c,i)=>{ const R = C0+2+i, src = MR(i), wash = i%2 ? BRAND_WASH : null;
       put(ws, "A"+R, c.city, { align:"left", bold:true, fill:wash });
-      put(ws, "B"+R, F(`S${src}`, c.drivers), { numFmt:NF.num, fill:wash });
-      put(ws, "C"+R, F(`IFERROR(B${R}/$S$${TOT},0)`, div(c.drivers,P.drivers)), { numFmt:NF.pct, fill:wash });
+      put(ws, "B"+R, F(`U${src}`, c.drivers), { numFmt:NF.num, fill:wash });
+      put(ws, "C"+R, F(`IFERROR(B${R}/$U$${TOT},0)`, div(c.drivers,P.drivers)), { numFmt:NF.pct, fill:wash });
       put(ws, "D"+R, F(`C${src}`, c.direct), { numFmt:NF.money, fill:wash });
       put(ws, "E"+R, F(`${OH}*C${R}`, c.ohShare), { numFmt:NF.money, fill:wash });
       put(ws, "F"+R, F(`D${R}+E${R}`, c.spend), { numFmt:NF.money, bold:true, fill:wash });
-      put(ws, "G"+R, F(`AA${src}`, c.weight), { numFmt:NF.num, fill:wash });
+      put(ws, "G"+R, F(`D${src}`, c.leads), { numFmt:NF.num, fill:wash });
+      put(ws, "H"+R, F(`IFERROR(F${R}/G${R},0)`, div(c.spend,c.leads)), { numFmt:NF.money2, fill:wash });
+      put(ws, "I"+R, F(`AC${src}`, c.weight), { numFmt:NF.num, fill:wash });
       const ok = c.cpk <= st.targetCPK+1e-6;
-      put(ws, "H"+R, F(`IFERROR(F${R}/G${R},0)`, c.cpk), { numFmt:NF.money3, bold:true, colour: ok?GREEN_OK:RED_BAD, fill:wash });
-      put(ws, "I"+R, F(`G${src}`, c.newShare), { numFmt:NF.pct, fill:wash });
-      put(ws, "J"+R, F(`H${R}-${A_(AR.cpk)}`, c.cpk-st.targetCPK), { numFmt:'+$0.000;-$0.000;"–"', colour: ok?GREEN_OK:RED_BAD, fill:wash });
+      put(ws, "J"+R, F(`IFERROR(F${R}/I${R},0)`, c.cpk), { numFmt:NF.money3, bold:true, colour: ok?GREEN_OK:RED_BAD, fill:wash });
+      put(ws, "K"+R, F(`J${R}-${A_(AR.cpk)}`, c.cpk-st.targetCPK), { numFmt:'+$0.000;-$0.000;"-"', colour: ok?GREEN_OK:RED_BAD, fill:wash });
     });
     const CT = C0+2+n, dk = { bold:true, colour:WHITE, fill:BRAND_DEEP };
     put(ws, "A"+CT, "TOTAL", { ...dk, align:"left" });
@@ -1409,10 +1616,11 @@ async function exportExcel(){
     put(ws, "D"+CT, F(`SUM(D${C0+2}:D${CT-1})`, P.direct), { ...dk, numFmt:NF.money });
     put(ws, "E"+CT, F(`SUM(E${C0+2}:E${CT-1})`, P.overhead), { ...dk, numFmt:NF.money });
     put(ws, "F"+CT, F(`SUM(F${C0+2}:F${CT-1})`, P.spend), { ...dk, numFmt:NF.money });
-    put(ws, "G"+CT, F(`SUM(G${C0+2}:G${CT-1})`, P.weight), { ...dk, numFmt:NF.num });
-    put(ws, "H"+CT, F(`IFERROR(F${CT}/G${CT},0)`, P.cpk), { ...dk, numFmt:NF.money3 });
-    put(ws, "I"+CT, F(`G${TOT}`, P.newShare), { ...dk, numFmt:NF.pct });
-    put(ws, "J"+CT, F(`H${CT}-${A_(AR.cpk)}`, P.cpk-st.targetCPK), { ...dk, numFmt:'+$0.000;-$0.000;"–"' });
+    put(ws, "G"+CT, F(`SUM(G${C0+2}:G${CT-1})`, P.leads), { ...dk, numFmt:NF.num });
+    put(ws, "H"+CT, F(`IFERROR(F${CT}/G${CT},0)`, P.cplAll), { ...dk, numFmt:NF.money2 });
+    put(ws, "I"+CT, F(`SUM(I${C0+2}:I${CT-1})`, P.weight), { ...dk, numFmt:NF.num });
+    put(ws, "J"+CT, F(`IFERROR(F${CT}/I${CT},0)`, P.cpk), { ...dk, numFmt:NF.money3 });
+    put(ws, "K"+CT, F(`J${CT}-${A_(AR.cpk)}`, P.cpk-st.targetCPK), { ...dk, numFmt:'+$0.000;-$0.000;"-"' });
 
     /* ---------------- September Baseline ---------------- */
     const a = SC.base;
@@ -1424,6 +1632,11 @@ async function exportExcel(){
      ["New share", a.newShare, BASE_ACTUAL.newDonors/(BASE_ACTUAL.newDonors+BASE_ACTUAL.retDonors), NF.pct, "As above"],
      ["Kilos", a.weight, BASE_ACTUAL.kgOdoo, NF.num, "Odoo received orders: 304,173 kg over 1-25 Sep, projected"],
      ["Paid platform spend", a.paidSpend, BASE_ACTUAL.paidSpend, NF.money, "Supermetrics, 1-20 Sep, projected to 30 days"],
+     ["Paid leads", a.leadsPaid, BASE_ACTUAL.leadsPaid, NF.num, "Odoo, Awon Paid Leads favourite, 1-25 Sep, projected to 30 days"],
+     ["Organic leads", a.leadsOrg, BASE_ACTUAL.leadsOrg, NF.num, "Odoo, Awon Organic, On-ground and Affiliate favourites"],
+     ["WhatsApp & CRM leads", a.leadsWa, BASE_ACTUAL.leadsWa, NF.num, "Odoo, Awon Retention Leads favourite"],
+     ["Total leads", a.leads, BASE_ACTUAL.leadsPaid+BASE_ACTUAL.leadsOrg+BASE_ACTUAL.leadsWa, NF.num, "Sum of the three groups (99% of all Awon leads)"],
+     ["Direct CPL", a.cpl, null, NF.money2, "Direct spend ÷ leads"],
      ["Cost per kg", a.cpk, null, NF.money3, "Full September spend not yet closed; see dashboard.awonksa.com"],
      ["nCAC", a.nCAC, null, NF.money2, "Paid-only cost per genuinely new donor was $28 in Aug-Sep"],
      ["rCAC", a.rCAC, null, NF.money2, "WhatsApp spend per returning donor"],
@@ -1442,13 +1655,19 @@ async function exportExcel(){
     styleTitle(rm, "A1:B1", `MODEL NOTES · AWON ${ML.toUpperCase()} FORECAST, NEW & RETURNING DONORS`, `Generated ${stamp}`);
     const lines = [
       ["h","How to read this workbook"],
-      ["p",`'${mainName}' keeps the old forecast's shape (one row per city, a total row, an executive summary and city spend with overhead) but splits every donor, kilo and dollar into new and returning.`],
+      ["p",`'${mainName}' keeps the old forecast's shape: leads and budget by channel first, then pickups, donors, kilos and logistics, one row per city, with a total row, an executive summary and city spend with overhead. Every pickup is split into new and returning donors.`],
       ["p","Shaded cells are inputs. Every other number is a live formula, so changing a channel's spend, a return rate or a city's driver count recalculates the whole month."],
       ["k","Shaded cells are inputs. White cells are formulas. Dark rows are totals. Green / red marks on-target / off-target."],
       ["h","Definitions (same as dashboard.awonksa.com)"],
       ["p","New donor: a phone number whose first-ever received donation falls in the month, matched across Odoo and the legacy customer data."],
       ["p","Returning donor: a phone number that donates in the month and has donated before."],
       ["p","nCAC = (paid + organic spend) ÷ new donors.   rCAC = WhatsApp spend ÷ returning donors."],
+      ["h","Leads (the marketing KPI)"],
+      ["p","Leads are Odoo leads with the Awon tag, grouped by the Awon Paid, Organic and Retention favourites, the same groups the dashboard uses. The MTD tab should match them."],
+      ["p","Every pickup is traced to the lead group it came through, then divided by that group's pickup rate to give the leads needed. The working is on the Lead Build sheet."],
+      ["p","Pickup rates (paid 87.7%, organic 78.6%, WhatsApp & CRM 87.0%) reproduce September's Odoo leads by group. August's fully matured leads converted 79% to 82%; about 5% still sit in Out for Delivery in Odoo, which is why the calibrated rates run higher."],
+      ["p","Paid ads also bring back existing donors: 1.4 returning donors per new donor in August, 58% of paid pickups. Exclusion audiences are modelled as stopping 60% of those; they return through WhatsApp & CRM leads instead, at a fraction of the cost."],
+      ["p","Paid CPL here uses all platform spend, including awareness campaigns. The live dashboard moves the awareness share to Organic, so its paid CPL reads lower."],
       ["h","How new donors are forecast"],
       ["p","Each channel converts spend into new donors at its own cost per genuinely new donor, measured Aug–Sep 2026: Google $18.50, Snapchat $34, Meta $215, TikTok $138."],
       ["p","Channels get dearer as spend rises: effective cost per new donor = base × lever factor × (spend ÷ average Aug-Sep spend) ^ elasticity. This is why the optimiser stops adding to Google rather than moving everything there."],
@@ -1469,7 +1688,7 @@ async function exportExcel(){
       ["p","Exclusion audiences: modelled as 15% cheaper new donors on every paid platform."],
       ["p","Fleet: drivers needed assumes at most the pickups-per-day setting and never more kilos than car capacity."],
       ["p","Sutra is excluded, as on the live dashboard."],
-      ["p","Sources: Odoo received orders (Aug and 1-25 Sep 2026); cohort analysis (253,599 donors, phone-matched, Jan 2024 to Sep 2026); Supermetrics platform spend; _Forecast_2024-2026.xlsx."]
+      ["p","Sources: Odoo leads and received orders (Aug and 1-25 Sep 2026); cohort analysis (253,599 donors, phone-matched, Jan 2024 to Sep 2026); Supermetrics platform spend; _Forecast_2024-2026.xlsx."]
     ];
     let rr = 4;
     lines.forEach(([kind,text])=>{
