@@ -1,239 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Awon — October 2026 Forecast · New &amp; Returning Donors</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Awon · Monthly Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{
-  --brand:#1D4A4F; --brand-deep:#123236; --brand-mid:#2E6B6F; --brand-tint:#DCE8E7; --brand-wash:#EEF4F3;
-  --sutra:#A2643A; --sutra-deep:#6E4426; --sutra-tint:#F1E6DA;
-  --paper:#F3F2ED; --card:#FFFFFF; --ink:#16211F; --dim:#63706E; --rule:#D5D8D2;
-  --input:#FFF6E3; --input-line:#E0C98C; --alert:#A33A1E; --warn:#B8862B; --ok:#2E6B4F;
+  --teal:#1D4A4F; --teal-deep:#163C40; --teal-mid:#2F6A6E; --teal-soft:#5E8F92;
+  --mint:#E4EEEC; --mint-2:#F1F6F5; --bg:#F4F7F6; --card:#FFFFFF;
+  --ink:#17302F; --muted:#6A7C7A; --line:#DCE6E4;
+  --good:#2E7D5B; --good-bg:#E2F1E9; --bad:#B9472A; --bad-bg:#FBE9E3; --warn:#A87718; --warn-bg:#FBF1DC;
+  --r-lg:22px; --r-md:14px; --r-sm:10px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;
-  font-size:14px;line-height:1.45;padding-bottom:64px}
-.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Readex Pro','Segoe UI',Tahoma,system-ui,sans-serif;
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.n,.stat .v,input[type=number]{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+button{font-family:inherit}
 
-header.mast{background:var(--brand);color:#fff;padding:18px 26px;display:flex;flex-wrap:wrap;gap:20px;
-  align-items:center;justify-content:space-between}
-.lockup{display:flex;align-items:center;gap:18px}
-.lockup img{height:52px;width:auto;display:block}
-.lockup .divider{width:1px;height:44px;background:rgba(255,255,255,.35)}
-.lockup .sub{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
-  opacity:.78;line-height:1.7}
-.lockup .sub b{display:block;font-size:13px;letter-spacing:.06em;font-weight:600;opacity:1}
-.mhright{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-.field{display:flex;flex-direction:column;gap:4px}
-.field label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
-.field input{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 10px;border:1px solid rgba(255,255,255,.35);
-  background:rgba(255,255,255,.1);color:#fff;border-radius:3px;width:150px}
-.btn{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
-  background:#fff;color:var(--brand);border:none;padding:12px 18px;border-radius:3px;cursor:pointer;font-weight:600;
-  transition:transform .12s ease,box-shadow .2s ease}
-.btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-weight:400}
-.btn.ghost:hover{background:rgba(255,255,255,.12)}
-.btn.line{background:transparent;color:var(--brand);border:1px solid var(--rule)}
-.btn.line:hover{background:var(--brand);color:#fff}
-.btn.solid{background:var(--brand);color:#fff}
-.btn.solid:hover{background:var(--brand-deep)}
-#toast{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 12px;background:rgba(255,255,255,.15);
-  border-left:3px solid #fff;align-self:center;display:none;max-width:340px}
+/* ---------- top & hero share the brand field ---------- */
+.brandfield{background:var(--teal);color:#fff;position:relative;overflow:hidden}
+.heroshell{max-width:1320px;margin-inline:auto;position:relative}
+.smile{position:absolute;bottom:14px;inset-inline-end:clamp(16px,4vw,44px);width:210px;height:auto;opacity:.16;pointer-events:none}
+.top{max-width:1320px;margin-inline:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:20px clamp(16px,4vw,44px) 6px;position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:16px}
+.brand img{height:46px;width:auto;display:block}
+.brand .sub{font-size:14px;font-weight:300;opacity:.85;padding-inline-start:16px;border-inline-start:1px solid rgba(255,255,255,.3)}
+.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lang{display:flex;background:rgba(255,255,255,.12);border-radius:999px;padding:3px}
+.lang button{border:none;background:transparent;color:#fff;font-size:13px;font-weight:500;padding:7px 14px;border-radius:999px;cursor:pointer;opacity:.75}
+.lang button.on{background:#fff;color:var(--teal);opacity:1}
+.month{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-size:14px;width:150px}
+.month::placeholder{color:rgba(255,255,255,.6)}
+.btn{border:none;border-radius:999px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;
+  transition:transform .15s ease,box-shadow .2s ease,background .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn.light{background:#fff;color:var(--teal);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.btn.primary{background:var(--teal);color:#fff}
+.btn.primary:hover{background:var(--teal-deep)}
+.btn.ghost{background:var(--mint);color:var(--teal)}
+.btn.ghost:hover{background:#D6E6E3}
 
-.readout{background:var(--brand-deep);color:#fff;padding:22px 26px 24px;display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
-.rblock{min-width:190px}
-.kg{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(28px,4.6vw,46px);letter-spacing:-.03em;line-height:1.05}
-.kg small{font-size:.3em;letter-spacing:.18em;opacity:.55;margin-left:8px}
-.kg.plan{opacity:.55}
-.kg.gap{color:#F0B67F}
-.rnote{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.7;margin-top:5px}
-.bar{display:flex;height:12px;margin-top:16px;border-radius:2px;overflow:hidden;background:rgba(255,255,255,.12);width:100%}
-.seg{transition:width .45s cubic-bezier(.4,0,.2,1);border-right:1px solid var(--brand-deep)}
-.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:11px;font-family:'IBM Plex Mono',monospace;opacity:.85}
-.legend i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:1px}
+.hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:22px clamp(16px,4vw,44px) 52px;position:relative;z-index:1}
+.stat{background:rgba(255,255,255,.08);border-radius:var(--r-lg);padding:18px 20px}
+.stat .l{font-size:13px;opacity:.8}
+.stat{min-width:0}
+.stat .v{display:block;font-size:clamp(22px,3.4vw,40px);overflow-wrap:anywhere;font-weight:600;letter-spacing:-.01em;line-height:1.15;margin-top:4px}
+.stat .v small{font-size:.42em;font-weight:400;opacity:.7;margin-inline-start:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 11px;border-radius:999px;margin-top:10px}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.soft{background:rgba(255,255,255,.14);color:#fff}
 
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:1px;background:var(--rule)}
-.kpi{background:var(--card);padding:12px 15px}
-.kpi b{display:block;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;margin-top:4px}
-.kpi .sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px}
+/* ---------- tabs ---------- */
+.tabwrap{position:sticky;top:0;z-index:10;background:var(--bg);padding:14px clamp(16px,4vw,44px) 0;max-width:1320px;margin-inline:auto}
+.tabs{display:inline-flex;gap:4px;background:var(--card);border-radius:999px;padding:5px;box-shadow:0 1px 3px rgba(23,48,47,.06)}
+.tab{border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:500;padding:9px 20px;border-radius:999px;cursor:pointer}
+.tab:hover{color:var(--teal)}
+.tab.on{background:var(--teal);color:#fff}
 
-nav.tabs{display:flex;padding:0 26px;background:var(--card);border-bottom:1px solid var(--rule);flex-wrap:wrap;
-  position:sticky;top:0;z-index:20;overflow-x:auto}
-.tab{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-  background:none;border:none;border-bottom:3px solid transparent;padding:14px 15px;cursor:pointer;color:var(--dim);white-space:nowrap}
-.tab:hover{color:var(--ink)}
-.tab.on{color:var(--brand);border-bottom-color:var(--brand)}
-.tab.on.sutra{color:var(--sutra);border-bottom-color:var(--sutra)}
+main{padding:18px clamp(16px,4vw,44px) 60px;max-width:1320px;margin-inline:auto}
+.panel{display:none}.panel.on{display:block}
+.card{background:var(--card);border-radius:var(--r-lg);padding:22px 24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(23,48,47,.05)}
+.card h2{font-size:18px;font-weight:600;margin:0 0 4px}
+.card .lead{color:var(--muted);font-size:14px;margin:0 0 16px;max-width:70ch}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;color:var(--muted)}
+.field input{border:1.5px solid var(--line);border-radius:var(--r-sm);padding:9px 12px;font:inherit;font-size:15px;width:140px;background:#fff;color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--teal-mid)}
 
-.panel{padding:26px;display:none}
-.panel.on{display:block}
-.sec{margin-bottom:34px}
-.sec h3{font-size:17px;font-weight:700;margin:2px 0 3px}
-.sec p.note{font-size:12.5px;color:var(--dim);margin:0 0 14px;max-width:80ch}
-.scroll{overflow-x:auto;border:1px solid var(--rule);background:var(--card);border-radius:3px}
-table{border-collapse:collapse;width:100%;font-size:12.5px}
-th{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:#fff;
-  font-weight:500;text-align:right;padding:9px 8px;background:var(--brand);white-space:nowrap;vertical-align:bottom}
-.sutra th{background:var(--sutra)}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;z-index:2}
-th:first-child{background:var(--brand)} .sutra th:first-child{background:var(--sutra)}
-td:first-child{background:var(--card);border-right:1px solid var(--rule);font-weight:600;padding:7px 8px}
-td{padding:0;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
-td.calc{padding:7px 8px;font-family:'IBM Plex Mono',monospace}
-td.calc.soft{color:var(--dim)}
-td.txt{padding:7px 8px;text-align:left;white-space:normal;font-weight:400}
-tbody tr:nth-child(even) td{background:var(--brand-wash)}
-tbody tr:nth-child(even) td:first-child{background:var(--brand-wash)}
-.sutra tbody tr:nth-child(even) td,.sutra tbody tr:nth-child(even) td:first-child{background:var(--sutra-tint)}
-tr.total td{background:var(--brand-deep)!important;color:#fff;font-weight:600;padding:8px;
-  font-family:'IBM Plex Mono',monospace;border-bottom:none}
-.sutra tr.total td{background:var(--sutra-deep)!important}
-tr.sub td{background:var(--brand-tint)!important;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:7px 8px}
-input.cell{width:100%;min-width:76px;border:none;background:var(--input);padding:7px 8px;text-align:right;
-  font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink);box-shadow:inset 0 -1px 0 var(--input-line)}
-input.cell:focus{outline:2px solid var(--brand);outline-offset:-2px;background:#fff}
-input.cell.text{text-align:left;min-width:120px}
-input.cell.hot{background:#FDE8E0;box-shadow:inset 0 -2px 0 var(--alert)}
-input.cell.warm{background:#FBF0D8;box-shadow:inset 0 -2px 0 var(--warn)}
-select.cell{width:100%;min-width:150px;border:none;background:var(--input);padding:6px 8px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--ink);box-shadow:inset 0 -1px 0 var(--input-line)}
-.rm{border:none;background:none;color:var(--dim);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:15px;padding:4px 9px}
-.rm:hover{color:var(--alert)}
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:1px;background:var(--rule);
-  border:1px solid var(--rule);border-radius:3px;overflow:hidden}
-.summary div{background:var(--card);padding:13px 15px}
-.summary b{display:block;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;margin-top:4px}
-.summary div.hl{background:var(--brand-tint)} .summary div.hls{background:var(--sutra-tint)}
-.flag{font-size:12.5px;background:var(--card);border-left:3px solid var(--alert);padding:11px 14px;margin-top:12px;border-radius:0 3px 3px 0}
-.flag.warn{border-left-color:var(--warn)} .flag.ok{border-left-color:var(--ok)} .flag.info{border-left-color:var(--brand-mid)}
-.legendkey{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin:10px 0 0}
-.legendkey i{display:inline-block;width:11px;height:11px;margin-right:6px;border:1px solid var(--input-line);
-  background:var(--input);vertical-align:-1px}
-.legendkey i.hot{background:#FDE8E0;border-color:var(--alert)}
-.legendkey i.warm{background:#FBF0D8;border-color:var(--warn)}
-.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.pill{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 13px;border:1px solid var(--rule);
-  background:var(--card);border-radius:14px;cursor:pointer;color:var(--dim)}
-.pill.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-.pill.mtd{border-style:dashed}
-.bridge{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-.brow{display:grid;grid-template-columns:200px 1fr 130px;gap:12px;align-items:center;font-size:12.5px}
-.btrack{height:22px;background:var(--brand-wash);position:relative;border-radius:2px;overflow:hidden}
-.bfill{position:absolute;top:0;bottom:0;transition:all .4s ease}
-.bfill.neg{background:var(--alert)} .bfill.pos{background:var(--ok)}
-.bval{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:15px 17px;border-top:3px solid var(--brand)}
-.card.alert{border-top-color:var(--alert)} .card.warn{border-top-color:var(--warn)} .card.ok{border-top-color:var(--ok)}
-.card h4{margin:0 0 4px;font-size:14.5px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.card h4 span{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-.card p{margin:6px 0 0;font-size:12.5px;color:var(--ink)}
-.card .metricline{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim);margin-top:8px}
-.toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);cursor:pointer}
-.toggle input{width:16px;height:16px;accent-color:var(--brand)}
-.spark{display:inline-flex;gap:2px;align-items:flex-end;height:18px;vertical-align:-3px;margin-left:6px}
-.spark i{width:5px;background:var(--brand-mid);display:block;border-radius:1px}
-@media (max-width:640px){header.mast,.panel,.readout{padding:16px}nav.tabs{padding:0 8px}.brow{grid-template-columns:110px 1fr 90px}}
-.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-.scard{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:16px 17px;border-top:4px solid var(--rule);position:relative}
-.scard.rec{border-top-color:var(--ok);box-shadow:0 2px 14px rgba(46,107,79,.12)}
-.scard.bad{border-top-color:var(--alert)} .scard.meh{border-top-color:var(--warn)} .scard.base{border-top-color:var(--brand-mid)}
-.scard h4{margin:0 0 2px;font-size:14.5px;padding-right:112px}
-.scard .tag{position:absolute;top:12px;right:12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;
-  text-transform:uppercase;padding:3px 8px;border-radius:10px;background:var(--brand-wash);color:var(--brand)}
-.scard .tag.ok{background:#E3F0E8;color:var(--ok)} .scard .tag.bad{background:#FBE6DF;color:var(--alert)} .scard .tag.meh{background:#FBF0D8;color:#8A6417}
-.scard dl{display:grid;grid-template-columns:1fr auto;gap:5px 10px;margin:12px 0 0;font-size:12.5px}
-.scard dt{color:var(--dim)} .scard dd{margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right}
-.scard dd.hit{color:var(--ok)} .scard dd.miss{color:var(--alert)}
-.scard p{font-size:12px;color:var(--dim);margin:10px 0 0}
-.lever{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;background:var(--card);
-  border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
-.lever input{width:17px;height:17px;accent-color:var(--brand);margin-top:2px}
-.lever b{font-size:13px} .lever p{margin:3px 0 0;font-size:12px;color:var(--dim)}
-.lever .imp{font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-align:right;white-space:nowrap}
-.wf{display:flex;flex-direction:column;gap:6px}
-.wrow{display:grid;grid-template-columns:250px 1fr 110px 80px;gap:12px;align-items:center;font-size:12.5px}
-.wtrack{height:20px;background:var(--brand-wash);border-radius:2px;position:relative;overflow:hidden}
-.wfill{position:absolute;top:0;bottom:0;background:var(--brand-mid);transition:all .4s ease}
-.wfill.gain{background:var(--ok)}
-.wval{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600}
-.chip{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 9px;border-radius:10px;margin-top:7px}
-.chip.ok{background:rgba(227,240,232,.95);color:var(--ok)} .chip.bad{background:rgba(251,230,223,.95);color:var(--alert)}
-.chip.meh{background:rgba(251,240,216,.95);color:#8A6417}
-.field.light label{opacity:1;color:var(--dim)}
-.field.light input{background:var(--input);border:1px solid var(--input-line);color:var(--ink);width:110px}
-@media (max-width:640px){.wrow{grid-template-columns:120px 1fr 80px 56px}}
+/* verdict */
+.verdict{font-size:20px;font-weight:600;line-height:1.35;margin:0 0 6px;color:var(--teal)}
+.scen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.sc{border:1.5px solid var(--line);border-radius:var(--r-md);padding:16px 18px}
+.sc.rec{border-color:var(--teal);background:var(--mint-2)}
+.sc .t{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-weight:600;font-size:14.5px}
+.sc .t .pill{margin-top:0;flex:none}
+.sc dl{display:grid;grid-template-columns:1fr auto;gap:6px 10px;margin:12px 0 0;font-size:14px}
+.sc dt{color:var(--muted)} .sc dd{margin:0;font-weight:600}
+.sc dd.good{color:var(--good)} .sc dd.bad{color:var(--bad)}
+.sc .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+
+/* bridge */
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:grid;grid-template-columns:minmax(150px,230px) 1fr 96px;gap:14px;align-items:center;font-size:14px}
+.track{height:14px;background:var(--mint);border-radius:999px;overflow:hidden}
+.fill{height:100%;background:var(--teal-soft);border-radius:999px;transition:width .45s ease}
+.step.last .fill{background:var(--teal)}
+.step .n{text-align:end;font-weight:600}
+.step .d{font-size:12px;color:var(--good);font-weight:500;display:block}
+
+.watch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.w{border-radius:var(--r-md);padding:14px 16px;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.w.bad{background:var(--bad-bg);color:#7A2E1B} .w.warn{background:var(--warn-bg);color:#6E4E10} .w.good{background:var(--good-bg);color:#1E5A40}
+.w b{font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:7px;background:currentColor}
+.foot{font-size:12.5px;color:var(--muted);margin-top:4px}
+
+/* levers */
+.levers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lever{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 14px;cursor:pointer}
+.lever.on{border-color:var(--teal-mid);background:var(--mint-2)}
+.sw{width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:inset-inline-start .2s}
+.lever.on .sw{background:var(--teal)}
+.lever.on .sw::after{inset-inline-start:19px}
+.lever .lt{font-weight:500;font-size:14px}
+.lever .ls{font-size:12.5px;color:var(--muted)}
+
+/* segmented */
+.seg{display:inline-flex;background:var(--mint);border-radius:999px;padding:4px;gap:2px;margin-bottom:16px}
+.seg button{border:none;background:transparent;color:var(--teal);font-size:14px;font-weight:500;padding:8px 18px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--teal);color:#fff}
+
+/* tables */
+.tbl{overflow-x:auto;border:1.5px solid var(--line);border-radius:var(--r-md)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-weight:500;font-size:12.5px;color:var(--muted);text-align:end;padding:11px 12px;border-bottom:1.5px solid var(--line);white-space:nowrap;background:var(--mint-2)}
+td{padding:9px 12px;text-align:end;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:start}
+td:first-child{font-weight:500}
+tr:last-child td{border-bottom:none}
+tr.tot td{background:var(--teal);color:#fff;font-weight:600}
+td.dim{color:var(--muted)}
+td.good{color:var(--good);font-weight:600} td.bad{color:var(--bad);font-weight:600}
+td input[type=number]{max-width:130px}
+td input,td select{border:1.5px solid transparent;background:var(--mint-2);border-radius:8px;padding:6px 9px;font:inherit;font-size:14px;
+  width:100%;min-width:84px;text-align:end;color:var(--ink)}
+td select{text-align:start;min-width:170px}
+td input.txt{text-align:start;min-width:160px;direction:auto}
+td input:focus,td select:focus{outline:none;border-color:var(--teal-mid);background:#fff}
+.rm{border:none;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;padding:0 6px;line-height:1}
+.rm:hover{color:var(--bad)}
+details{margin-top:4px}
+details summary{cursor:pointer;font-weight:600;font-size:16px;list-style:none;display:flex;align-items:center;gap:10px}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+";width:26px;height:26px;border-radius:50%;background:var(--mint);color:var(--teal);
+  display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+details[open] summary::before{content:"−"}
+details .inner{margin-top:16px}
+.info{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:var(--mint);
+  color:var(--teal);font-size:11px;font-weight:600;cursor:help;margin-inline-start:6px;vertical-align:1px}
+
+#toast{position:fixed;bottom:22px;inset-inline-start:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;
+  padding:12px 20px;border-radius:999px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;z-index:50}
+[dir=rtl] #toast{transform:translateX(50%)}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scen,.watch{grid-template-columns:1fr}
+  .levers,.grid2{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .brand .sub{display:none}
+  .stat{padding:14px}
+  .stat .pill{font-size:11px;padding:3px 8px}
+  .hero{gap:10px;padding-bottom:44px}
+  .smile{width:150px}
+  .step{grid-template-columns:1fr 70px}.step .track{grid-column:1/-1;grid-row:2}
+  .tab{padding:8px 13px}
+}
 </style>
 </head>
 <body>
-<header class="mast">
-  <div class="lockup">
-    <img id="wordmark" alt="Awon">
-    <div class="divider"></div>
-    <div class="sub"><b>New &amp; Returning Forecast</b><span id="mastMonth">October 2026</span> · Awon KSA collections</div>
-  </div>
-  <div class="mhright">
-    <div id="toast"></div>
-    <div class="field">
-      <label>Forecast month</label>
-      <input id="monthLabel" value="October 2026">
+<div class="brandfield">
+  <header class="top">
+    <div class="brand">
+      <img id="wordmark" alt="Awon">
+      <span class="sub" data-t="brandSub"></span>
     </div>
-    <button class="btn ghost" id="augBtn">August run-rate</button>
-    <button class="btn ghost" id="optBtn">Optimise to target</button>
-    <button class="btn" id="exportBtn">Download Excel</button>
+    <div class="actions">
+      <div class="lang"><button data-lang="en">EN</button><button data-lang="ar">ع</button></div>
+      <input class="month" id="monthLabel" value="October 2026" aria-label="Month">
+      <button class="btn light" id="exportBtn" data-t="download"></button>
+    </div>
+  </header>
+  <div class="heroshell">
+  <section class="hero" id="hero"></section>
+  <svg class="smile" viewBox="0 0 230 40" aria-hidden="true"><path d="M8 8 Q115 58 222 8" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/></svg>
   </div>
-</header>
+</div>
 
-<section class="readout">
-  <div class="rblock">
-    <div class="eyebrow" style="color:rgba(255,255,255,.6)">Kilos this plan collects</div>
-    <div class="kg" id="rKg">—<small>KG</small></div>
-    <div class="rnote" id="rKgNote"></div>
-  </div>
-  <div class="rblock">
-    <div class="eyebrow" style="color:rgba(255,255,255,.6)">Cost per kg</div>
-    <div class="kg" id="rCpk">—</div>
-    <div id="rCpkChip"></div>
-  </div>
-  <div class="rblock">
-    <div class="eyebrow" style="color:rgba(255,255,255,.6)">New donors</div>
-    <div class="kg" id="rNew">—</div>
-    <div id="rNewChip"></div>
-  </div>
-  <div class="rblock">
-    <div class="eyebrow" style="color:rgba(255,255,255,.6)">Returning donors</div>
-    <div class="kg" id="rRet">—</div>
-    <div class="rnote" id="rRetNote"></div>
-  </div>
-  <div class="rblock">
-    <div class="eyebrow" style="color:rgba(255,255,255,.6)">Drivers needed</div>
-    <div class="kg" id="rDrv">—</div>
-    <div id="rDrvChip"></div>
-  </div>
-</section>
+<div class="tabwrap">
+  <nav class="tabs">
+    <button class="tab on" data-tab="plan" data-t="tabPlan"></button>
+    <button class="tab" data-tab="budget" data-t="tabBudget"></button>
+    <button class="tab" data-tab="ret" data-t="tabRet"></button>
+    <button class="tab" data-tab="city" data-t="tabCity"></button>
+  </nav>
+</div>
 
-<div class="kpis" id="kpis"></div>
-
-<nav class="tabs">
-  <button class="tab on" data-tab="plan">October plan</button>
-  <button class="tab" data-tab="new">New donors</button>
-  <button class="tab" data-tab="ret">Returning donors</button>
-  <button class="tab" data-tab="city">City forecast</button>
-  <button class="tab" data-tab="overhead">Overhead</button>
-  <button class="tab" data-tab="base">August baseline</button>
-</nav>
-
-<div class="panel on" id="panel-plan"></div>
-<div class="panel" id="panel-new"></div>
-<div class="panel" id="panel-ret"></div>
-<div class="panel" id="panel-city"></div>
-<div class="panel" id="panel-overhead"></div>
-<div class="panel" id="panel-base"></div>
+<main>
+  <div class="panel on" id="panel-plan"></div>
+  <div class="panel" id="panel-budget"></div>
+  <div class="panel" id="panel-ret"></div>
+  <div class="panel" id="panel-city"></div>
+</main>
+<div id="toast"></div>
 
 <script>
 const WORDMARK = "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";
@@ -242,13 +211,13 @@ const WORDMARK = "iVBORw0KGgoAAAANSUhEUgAAAcwAAAEyCAYAAAB3Q+DvAABl1klEQVR42u2dd5
 // reactivated from the existing base (pools × monthly return rate).
 
 const CITY_BASE = [
-  { id:1, city:"Riyadh",  drivers:15, days:26, carCap:700, paidShare:0.393, baseShare:0.382, repeatIdx:1.03, kgBlend:23.0, pr:0.874 },
-  { id:2, city:"Jeddah",  drivers:9,  days:26, carCap:550, paidShare:0.223, baseShare:0.287, repeatIdx:1.00, kgBlend:20.1, pr:0.885 },
-  { id:3, city:"Mecca",   drivers:2,  days:26, carCap:700, paidShare:0.047, baseShare:0.030, repeatIdx:0.53, kgBlend:27.6, pr:0.644 },
-  { id:4, city:"Taif",    drivers:1,  days:26, carCap:700, paidShare:0.026, baseShare:0.024, repeatIdx:1.00, kgBlend:19.0, pr:0.855 },
-  { id:5, city:"Madina",  drivers:4,  days:26, carCap:600, paidShare:0.122, baseShare:0.107, repeatIdx:1.00, kgBlend:22.0, pr:0.877 },
-  { id:6, city:"Sharqia", drivers:5,  days:26, carCap:750, paidShare:0.146, baseShare:0.127, repeatIdx:1.00, kgBlend:27.2, pr:0.834 },
-  { id:7, city:"Asir",    drivers:2,  days:26, carCap:600, paidShare:0.043, baseShare:0.043, repeatIdx:1.00, kgBlend:27.6, pr:0.840 }
+  { id:1, city:"Riyadh",  drivers:15, days:26, carCap:700, paidShare:0.393, baseShare:0.3674, repeatIdx:1.03, kgBlend:21.5, pr:0.874 },
+  { id:2, city:"Jeddah",  drivers:9,  days:26, carCap:550, paidShare:0.223, baseShare:0.2999, repeatIdx:1.00, kgBlend:20.2, pr:0.885 },
+  { id:3, city:"Mecca",   drivers:2,  days:26, carCap:700, paidShare:0.047, baseShare:0.0324, repeatIdx:0.53, kgBlend:20.4, pr:0.644 },
+  { id:4, city:"Taif",    drivers:1,  days:26, carCap:700, paidShare:0.026, baseShare:0.0231, repeatIdx:1.00, kgBlend:20.3, pr:0.855 },
+  { id:5, city:"Madina",  drivers:4,  days:26, carCap:600, paidShare:0.122, baseShare:0.1044, repeatIdx:1.00, kgBlend:22.5, pr:0.877 },
+  { id:6, city:"Sharqia", drivers:5,  days:26, carCap:750, paidShare:0.146, baseShare:0.1258, repeatIdx:1.00, kgBlend:21.2, pr:0.834 },
+  { id:7, city:"Asir",    drivers:2,  days:26, carCap:600, paidShare:0.043, baseShare:0.0470, repeatIdx:1.00, kgBlend:26.0, pr:0.840 }
 ];
 
 // Donor base as of 20 Sep 2026 (cohort analysis), all cities
@@ -260,21 +229,21 @@ const SEGMENTS = [
   { key:"dormant", label:"Dormant (365+ days)" }
 ];
 // Monthly return rate and cost per returning donor (rCAC) by segment.
-// Baseline is calibrated so it reproduces August 2026: 13.0K returning, ~$11.2K WhatsApp.
+// Run-rate is calibrated so it reproduces September 2026: about 12.4K returning donors.
 const PRESETS = {
-  baseline: { label:"August run-rate",   rate:{active:0.084,due:0.126,lapsing:0.047,dormant:0.016}, rcac:{active:0.30,due:0.85,lapsing:1.30,dormant:1.50} },
+  baseline: { label:"September run-rate", rate:{active:0.0806,due:0.1210,lapsing:0.0451,dormant:0.0154}, rcac:{active:0.30,due:0.85,lapsing:1.30,dormant:1.50} },
   alwayson: { label:"Always-on program", rate:{active:0.084,due:0.160,lapsing:0.060,dormant:0.022}, rcac:{active:0.30,due:0.90,lapsing:1.35,dormant:1.60} },
   max:      { label:"Maximum (stretch)", rate:{active:0.084,due:0.190,lapsing:0.075,dormant:0.026}, rcac:{active:0.30,due:0.95,lapsing:1.45,dormant:1.75} }
 };
 
 // New-donor channels. Scalable ones follow diminishing returns around their reference spend.
 const CHANNELS_BASE = [
-  { id:"google",  name:"Google Ads (search & PMax)",           kind:"scalable", spend:30200, ref:30200, cpnd:18.5, cap:90000 },
-  { id:"snap",    name:"Snapchat",                             kind:"scalable", spend:27250, ref:27250, cpnd:34,   cap:60000 },
-  { id:"meta",    name:"Meta (lead-gen & messaging)",          kind:"scalable", spend:10900, ref:10900, cpnd:215,  cap:30000 },
-  { id:"tiktok",  name:"TikTok",                               kind:"scalable", spend:3000,  ref:3000,  cpnd:138,  cap:15000 },
+  { id:"google",  name:"Google Ads (search & PMax)",           kind:"scalable", spend:26900, ref:28560, cpnd:18.5, cap:90000 },
+  { id:"snap",    name:"Snapchat",                             kind:"scalable", spend:22900, ref:25060, cpnd:34,   cap:60000 },
+  { id:"meta",    name:"Meta (lead-gen & messaging)",          kind:"scalable", spend:11350, ref:11120, cpnd:215,  cap:30000 },
+  { id:"tiktok",  name:"TikTok",                               kind:"scalable", spend:1450,  ref:2240,  cpnd:138,  cap:15000 },
   { id:"partner", name:"Co-branded partner campaigns",         kind:"scalable", spend:0,     ref:18000, cpnd:12,   cap:18000 },
-  { id:"organic", name:"Organic, SEO & branding",              kind:"fixed",    spend:8000,  donors:2300 },
+  { id:"organic", name:"Organic, SEO & branding",              kind:"fixed",    spend:8000,  donors:1750 },
   { id:"wanew",   name:"WhatsApp new (Chatrace / click-to-WA)", kind:"fixed",   spend:1500,  donors:1100 }
 ];
 
@@ -283,12 +252,12 @@ const SETTINGS_BASE = {
   targetCPK:0.18, targetNewShare:0.45,
   served:0.95,           // share of the donor base in cities still served
   kgRatio:1.29,          // first pickup ÷ returning pickup (cohorts: ~24.5 vs ~19)
-  baseNewShare:0.31,     // new share when the city kg medians were measured (Aug 2026)
+  baseNewShare:0.302,    // new share over Aug-Sep 2026, when city kg per pickup was measured
   elasticity:0.25,       // cost per new donor rises with spend^0.25 around reference
   maxPPD:27,             // max pickups per driver per day (the old plan assumed ~27)
   firstYearKg:37.5,      // kg a new donor gives in year one (cohorts)
-  halo:0,                // new donors per $1K paid-spend change vs August (correlational, off by default)
-  augPaidSpend:71350,    // August paid platform spend, the halo reference
+  halo:0,                // new donors per $1K paid-spend change vs September (correlational, off by default)
+  refPaidSpend:62600,    // September paid platform spend (projected), the halo reference
   preset:"max",
   levers:{ exclude:true, snapRefresh:true, fast:true, capi:true }
 };
@@ -353,7 +322,7 @@ function computePlan(cities, channels, st, pools, overheadAwon, returnScale){
   const partnerSpend = partner ? partner.spend : 0, partnerNew = partner ? partner.donors : 0;
   const fixedRows = chRows.filter(c=>c.kind==="fixed");
   const otherSpend = fixedRows.reduce((a,c)=>a+c.spend,0) + capiSpend;
-  const haloNew = st.halo ? Math.max(-fixedRows.reduce((a,c)=>a+c.donors,0), st.halo * (paidSpend - st.augPaidSpend) / 1000) : 0;
+  const haloNew = st.halo ? Math.max(-fixedRows.reduce((a,c)=>a+c.donors,0), st.halo * (paidSpend - st.refPaidSpend) / 1000) : 0;
   const otherNew = fixedRows.reduce((a,c)=>a+c.donors,0) + fastDonors + capiDonors + haloNew;
 
   const totalDrivers = cities.reduce((a,c)=>a+c.drivers,0);
@@ -518,7 +487,7 @@ function requiredNCAC(plan, st){
 }
 // ==== MODEL END ============================================================
 const OH_TYPES = ["Content production","UGC / IGC","SEO","Software & tools","Education & training",
-  "R&D — market research","On-ground activation","Contests & gifts","Out-of-home / in-mall",
+  "R&D / market research","On-ground activation","Contests & gifts","Out-of-home / in-mall",
   "Agency & freelance fees","Influencers & partnerships","Other"];
 
 const OVERHEAD_BASE = [
@@ -526,7 +495,7 @@ const OVERHEAD_BASE = [
   { id:2,  type:"SEO",                    item:"Technical SEO retainer",        total:450,  awonPct:0.85 },
   { id:3,  type:"Software & tools",       item:"Licenses & dev",                total:1000, awonPct:0.85 },
   { id:4,  type:"Education & training",   item:"Team training",                 total:0,    awonPct:0.85 },
-  { id:5,  type:"R&D — market research",  item:"Market research",               total:0,    awonPct:0.85 },
+  { id:5,  type:"R&D / market research",  item:"Market research",               total:0,    awonPct:0.85 },
   { id:6,  type:"Content production",     item:"Production of monthly content", total:2000, awonPct:0.5  },
   { id:7,  type:"Out-of-home / in-mall",  item:"In-mall screens / seasons",     total:0,    awonPct:0.85 },
   { id:8,  type:"Agency & freelance fees",item:"Content writing agencies",      total:0,    awonPct:0.85 },
@@ -535,440 +504,388 @@ const OVERHEAD_BASE = [
 ];
 
 
-// ---- state ----
+// ================= i18n =================
+const I18N = {
+  en: {
+    brandSub:"Monthly forecast", download:"Download Excel", monthPh:"Month",
+    tabPlan:"Overview", tabBudget:"Budget", tabRet:"Returning", tabCity:"Cities",
+    kgU:"kg", kilos:"Kilos collected", cpk:"Cost per kg", newD:"New donors", retD:"Returning donors",
+    vsAug:v=>`${v} vs September`, target:v=>`Target ${v}`, onTarget:"On target", over:v=>`${v} over target`,
+    shareOf:(v,t)=>`${v} of donors · target ${t}`,
+    drivers:(need,have)=>`${need} drivers needed · ${have} on roster`,
+    targets:"Targets", tCpk:"Cost per kg", tShare:"New donor share",
+    optimise:"Optimise", resetAug:"September run-rate",
+    verdictOk:(c)=>`${c} per kg is on track.`,
+    verdict:(c,s)=>`${c} per kg is reachable. ${s} new donors in the same month is not.`,
+    verdictBody:x=>`A returning donor's kilos cost ${x}× less than a new donor's. More returning donors lower the cost per kg, and lower the new share with it.`,
+    scA:"Most kilos at target", scB:"Both targets", scC:"Target share, max returning",
+    rec:"Recommended", over2:"Over budget", fewer:"Fewer kilos",
+    kg:"Kilos", share:"New share",
+    noteA:v=>`New donors ${v} vs September`,
+    noteB:(r,k)=>`Returning cut ${r} · ${k} fewer kilos than September`,
+    noteBmore:(r)=>`Returning cut ${r}`,
+    noteC:v=>`Every channel at its limit reaches ${v}`,
+    noteCok:v=>`Reaches target at ${v}/kg`,
+    infeasible:"Not reachable",
+    suggest:n=>`Suggestion: keep the cost target, and set acquisition as ${n} new donors instead of a share.`,
+    bridge:"From September to this plan",
+    step_base:"September run-rate", step_react:"Reactivation", step_exclude:"Exclude donors from ads",
+    step_snapRefresh:"New Snapchat creative", step_fast:"48-hour first pickup", step_capi:"Click-to-WhatsApp",
+    step_realloc:"Reallocate budget",
+    watch:"Watch",
+    wDrivers:n=>`<b>${N(n)} more driver${n===1?"":"s"}</b> needed to collect this plan`,
+    wDriversOk:"<b>Fleet covers it</b> at the current roster",
+    wPartner:"<b>Partner channel</b> isn't live yet",
+    wReact:"<b>Maximum reactivation</b> has only been reached in bursts",
+    check:(a,b)=>`Model check: reproduces September (${a} new, ${b} returning).`,
+    levers:"Levers", channels:"Channels",
+    lv_exclude:"Exclude existing donors from ads", ls_exclude:"15% cheaper per new donor",
+    lv_snapRefresh:"New Snapchat creative", ls_snapRefresh:"$34 → $28 per new donor",
+    lv_fast:"48-hour first pickup", ls_fast:"+450 new donors",
+    lv_capi:"Click-to-WhatsApp + CAPI", ls_capi:"+300 new donors for $900",
+    colChannel:"Channel", colSpend:"Spend", colCpnd:"Cost per new donor", colNew:"New donors", colCpk:"Cost per kg", total:"Total",
+    colDonorsIn:"Donors", lever:"Lever",
+    ch_google:"Google Ads", ch_snap:"Snapchat", ch_meta:"Meta", ch_tiktok:"TikTok", ch_partner:"Partner campaigns",
+    ch_organic:"Organic & branding", ch_wanew:"WhatsApp (new)", ch_fast:"48-hour first pickup", ch_capi:"Click-to-WhatsApp", ch_halo:"Halo effect",
+    cpndTip:"Cost per genuinely new donor, Aug–Sep 2026. Rises as spend rises.",
+    overhead:"Overhead", overheadLead:"Only Awon's share counts. It's spread across cities by drivers.",
+    colType:"Type", colItem:"Item", colBudget:"Budget", colAwonPct:"Awon %", colAwon:"Awon $", addLine:"Add line",
+    program:"Reactivation program", programLead:"Returning donors come from the existing base. Active donors are left alone.",
+    pr_baseline:"September run-rate", pr_alwayson:"Always-on", pr_max:"Maximum", pr_custom:"Custom",
+    colSeg:"Segment", colInBase:"In base", colRate:"Monthly return", colRcac:"Cost per donor", colRet:"Returning", colWa:"WhatsApp $",
+    seg_active:"Active · 0–90 days", seg_due:"Due · 91–180 days", seg_lapsing:"Lapsing · 181–365 days", seg_dormant:"Dormant · 365+ days",
+    settings:"Model settings",
+    set_served:"Base in served cities", set_kgRatio:"First ÷ returning kg", set_baseNewShare:"New share when kg measured",
+    set_elasticity:"Cost elasticity", set_maxPPD:"Max pickups per driver/day", set_firstYearKg:"Year-one kg per new donor", set_halo:"Halo (donors per $1K)",
+    cityTitle:"By city", cityLead:"Edit drivers and days. Red means the city needs more drivers than it has.",
+    colCity:"City", colDrivers:"Drivers", colDays:"Days", colNewS:"New", colRetS:"Returning", colKg:"Kilos", colSpendS:"Spend", colNeed:"Drivers needed",
+    toastOpt:(kg,c)=>`Optimised · ${kg} kg at ${c}/kg`, toastAug:"Back to September's run-rate", downloaded:"Downloaded",
+    city:{}
+  },
+  ar: {
+    brandSub:"التوقعات الشهرية", download:"تحميل Excel", monthPh:"الشهر",
+    tabPlan:"نظرة عامة", tabBudget:"الميزانية", tabRet:"العائدون", tabCity:"المدن",
+    kgU:"كجم", kilos:"الكمية المجمعة", cpk:"تكلفة الكيلو", newD:"متبرعون جدد", retD:"متبرعون عائدون",
+    vsAug:v=>`${v} مقارنة بسبتمبر`, target:v=>`المستهدف ${v}`, onTarget:"ضمن المستهدف", over:v=>`أعلى من المستهدف بـ ${v}`,
+    shareOf:(v,t)=>`${v} من المتبرعين · المستهدف ${t}`,
+    drivers:(need,have)=>`المطلوب ${need} سائقاً · المتوفر ${have}`,
+    targets:"المستهدفات", tCpk:"تكلفة الكيلو", tShare:"نسبة المتبرعين الجدد",
+    optimise:"تحسين الخطة", resetAug:"معدل سبتمبر",
+    verdictOk:(c)=>`تكلفة ${c} للكيلو ضمن المسار.`,
+    verdict:(c,s)=>`تكلفة ${c} للكيلو ممكنة. أما ${s} متبرعين جدد فغير ممكنة في نفس الشهر.`,
+    verdictBody:x=>`كيلو المتبرع العائد أرخص بـ ${x} مرة من كيلو المتبرع الجديد. زيادة العائدين تخفض تكلفة الكيلو، وتخفض نسبة الجدد معها.`,
+    scA:"أعلى كمية ضمن المستهدف", scB:"المستهدفان معاً", scC:"النسبة المستهدفة مع أقصى عائدين",
+    rec:"موصى به", over2:"تتجاوز الميزانية", fewer:"كمية أقل",
+    kg:"الكمية (كجم)", share:"نسبة الجدد",
+    noteA:v=>`المتبرعون الجدد ${v} عن سبتمبر`,
+    noteB:(r,k)=>`خفض العائدين ${r} · أقل من سبتمبر بـ ${k} كجم`,
+    noteBmore:(r)=>`خفض العائدين ${r}`,
+    noteC:v=>`كل القنوات بأقصى حد تصل إلى ${v}`,
+    noteCok:v=>`تصل للمستهدف بتكلفة ${v} للكيلو`,
+    infeasible:"غير ممكن",
+    suggest:n=>`اقتراح: الإبقاء على مستهدف التكلفة، وتحديد الاستقطاب بعدد ${n} متبرع جديد بدلاً من نسبة.`,
+    bridge:"من سبتمبر إلى هذه الخطة",
+    step_base:"معدل سبتمبر", step_react:"إعادة التنشيط", step_exclude:"استبعاد المتبرعين من الإعلانات",
+    step_snapRefresh:"تجديد إعلانات سناب شات", step_fast:"استلام أول تبرع خلال 48 ساعة", step_capi:"النقر إلى واتساب",
+    step_realloc:"إعادة توزيع الميزانية",
+    watch:"انتبه",
+    wDrivers:n=> n===1 ? `نحتاج <b>سائقاً إضافياً واحداً</b> لتنفيذ الخطة` : `نحتاج <b>${N(n)} سائقين إضافيين</b> لتنفيذ الخطة`,
+    wDriversOk:"<b>الأسطول كافٍ</b> بالعدد الحالي",
+    wPartner:"<b>قناة الشركاء</b> غير مفعّلة بعد",
+    wReact:"<b>أقصى إعادة تنشيط</b> تحققت في حملات مؤقتة فقط",
+    check:(a,b)=>`التحقق من النموذج: يعيد نتائج سبتمبر (${a} جدد، ${b} عائدون).`,
+    levers:"أدوات التحسين", channels:"القنوات",
+    lv_exclude:"استبعاد المتبرعين الحاليين من الإعلانات", ls_exclude:"أرخص 15٪ لكل متبرع جديد",
+    lv_snapRefresh:"تجديد إعلانات سناب شات", ls_snapRefresh:"من 34$ إلى 28$ لكل متبرع جديد",
+    lv_fast:"استلام أول تبرع خلال 48 ساعة", ls_fast:"+450 متبرع جديد",
+    lv_capi:"النقر إلى واتساب + CAPI", ls_capi:"+300 متبرع جديد مقابل 900$",
+    colChannel:"القناة", colSpend:"الإنفاق", colCpnd:"تكلفة المتبرع الجديد", colNew:"متبرعون جدد", colCpk:"تكلفة الكيلو", total:"الإجمالي",
+    colDonorsIn:"المتبرعون", lever:"أداة",
+    ch_google:"إعلانات جوجل", ch_snap:"سناب شات", ch_meta:"ميتا", ch_tiktok:"تيك توك", ch_partner:"حملات الشركاء",
+    ch_organic:"العضوي والعلامة التجارية", ch_wanew:"واتساب (جدد)", ch_fast:"استلام خلال 48 ساعة", ch_capi:"النقر إلى واتساب", ch_halo:"الأثر غير المباشر",
+    cpndTip:"تكلفة المتبرع الجديد فعلياً، أغسطس–سبتمبر 2026. ترتفع مع زيادة الإنفاق.",
+    overhead:"المصاريف العامة", overheadLead:"تُحتسب حصة عون فقط، وتوزع على المدن حسب عدد السائقين.",
+    colType:"النوع", colItem:"البند", colBudget:"الميزانية", colAwonPct:"حصة عون ٪", colAwon:"مبلغ عون", addLine:"إضافة بند",
+    program:"برنامج إعادة التنشيط", programLead:"المتبرعون العائدون يأتون من القاعدة الحالية. لا نتواصل مع النشطين.",
+    pr_baseline:"معدل سبتمبر", pr_alwayson:"مستمر", pr_max:"الأقصى", pr_custom:"مخصص",
+    colSeg:"الشريحة", colInBase:"في القاعدة", colRate:"العودة الشهرية", colRcac:"التكلفة لكل متبرع", colRet:"العائدون", colWa:"إنفاق واتساب",
+    seg_active:"نشط · 0–90 يوماً", seg_due:"حان موعده · 91–180 يوماً", seg_lapsing:"متراجع · 181–365 يوماً", seg_dormant:"خامل · أكثر من 365 يوماً",
+    settings:"إعدادات النموذج",
+    set_served:"القاعدة في المدن المخدومة", set_kgRatio:"وزن الأول ÷ وزن العائد", set_baseNewShare:"نسبة الجدد عند قياس الوزن",
+    set_elasticity:"مرونة التكلفة", set_maxPPD:"أقصى استلامات للسائق يومياً", set_firstYearKg:"كجم السنة الأولى لكل متبرع جديد", set_halo:"الأثر غير المباشر (متبرع لكل 1000$)",
+    cityTitle:"حسب المدينة", cityLead:"عدّل السائقين والأيام. الأحمر يعني أن المدينة تحتاج سائقين أكثر.",
+    colCity:"المدينة", colDrivers:"السائقون", colDays:"الأيام", colNewS:"جدد", colRetS:"عائدون", colKg:"الكمية (كجم)", colSpendS:"الإنفاق", colNeed:"السائقون المطلوبون",
+    toastOpt:(kg,c)=>`تم التحسين · ${kg} كجم بتكلفة ${c} للكيلو`, toastAug:"تمت العودة لمعدل سبتمبر", downloaded:"تم التحميل",
+    city:{ Riyadh:"الرياض", Jeddah:"جدة", Mecca:"مكة المكرمة", Taif:"الطائف", Madina:"المدينة المنورة", Sharqia:"الشرقية", Asir:"عسير" },
+    ohType:{ "Content production":"إنتاج المحتوى","UGC / IGC":"محتوى المستخدمين","SEO":"تحسين محركات البحث","Software & tools":"البرامج والأدوات",
+      "Education & training":"التعليم والتدريب","R&D / market research":"أبحاث السوق","On-ground activation":"التفعيل الميداني",
+      "Contests & gifts":"المسابقات والهدايا","Out-of-home / in-mall":"الإعلانات الخارجية والمولات","Agency & freelance fees":"أتعاب الوكالات والمستقلين",
+      "Influencers & partnerships":"المؤثرون والشراكات","Other":"أخرى" }
+  }
+};
+let lang = "en";
+const t = (k, ...a) => { const v = (I18N[lang][k] !== undefined ? I18N[lang][k] : I18N.en[k]); return typeof v === "function" ? v(...a) : v; };
+const cityName = c => (lang==="ar" && I18N.ar.city[c]) || c;
+const ohTypeName = x => (lang==="ar" && I18N.ar.ohType[x]) || x;
+
+// ================= state =================
 const clone = x => JSON.parse(JSON.stringify(x));
 PRESETS.custom = clone(PRESETS.max); PRESETS.custom.label = "Custom";
-let cities = clone(CITY_BASE);
-let channels = clone(CHANNELS_BASE);
-let st = clone(SETTINGS_BASE);
-let pools = clone(POOLS_BASE);
-let overhead = clone(OVERHEAD_BASE);
+let cities = clone(CITY_BASE), channels = clone(CHANNELS_BASE), st = clone(SETTINGS_BASE),
+    pools = clone(POOLS_BASE), overhead = clone(OVERHEAD_BASE);
 let P, SC = null, scTimer = null;
-
 const ohAwon = () => overhead.reduce((a,r)=>a+r.total*r.awonPct, 0);
 const ohSutra = () => overhead.reduce((a,r)=>a+r.total*(1-r.awonPct), 0);
 
-const AUG_ACTUAL = { newDonors:5900, retDonors:13000, kgMTD:293696, daysMTD:19, daysOp:27,
-                     spendMTD:68447, spendDays:23, calDays:31 };
-AUG_ACTUAL.kgFull = AUG_ACTUAL.kgMTD * AUG_ACTUAL.daysOp / AUG_ACTUAL.daysMTD;
-AUG_ACTUAL.spendFull = AUG_ACTUAL.spendMTD * AUG_ACTUAL.calDays / AUG_ACTUAL.spendDays;
+// September 2026 actuals, projected from 1-25 Sep (21 of 26 operating days):
+// pickups and kilos from Odoo received orders, new/returning split from the cohort analysis (Sep 1-20),
+// paid platform spend from Supermetrics (Sep 1-20, projected to 30 days).
+const BASE_ACTUAL = { label:"September 2026", window:"1-25 Sep", newDonors:5084, retDonors:12448,
+  pickups:17533, kgOdoo:376596, paidSpend:62610 };
 
-function augSettings(){
-  const s = clone(st); s.preset = "baseline";
-  s.levers = { exclude:false, snapRefresh:false, fast:false, capi:false }; return s;
-}
-function augPlan(){ return computePlan(cities, CHANNELS_BASE, augSettings(), pools, ohAwon()); }
-
+function baseSettings(){ const s = clone(st); s.preset = "baseline"; s.levers = { exclude:false, snapRefresh:false, fast:false, capi:false }; return s; }
+function basePlan(){ return computePlan(cities, CHANNELS_BASE, baseSettings(), pools, ohAwon()); }
 function compute(){ P = computePlan(cities, channels, st, pools, ohAwon()); }
 
 function computeScenarios(){
   const oh = ohAwon();
-  const aug = augPlan();
+  const base = basePlan();
   const A = solveMaxKgAtCPK(cities, channels, st, pools, oh);
   const B = solveBothRatios(cities, channels, st, pools, oh);
   const C = solveShareAtMaxReturning(cities, channels, st, pools, oh);
   const req = requiredNCAC(A.plan, st);
-  // waterfall: August → each lever → budget reallocation
   const steps = [];
-  let s = augSettings();
-  const push = (label, plan) => steps.push({ label, plan });
-  push("August run-rate", computePlan(cities, CHANNELS_BASE, s, pools, oh));
-  s = clone(s); s.preset = st.preset; push(`Reactivation: ${PRESETS[st.preset].label.toLowerCase()}`, computePlan(cities, CHANNELS_BASE, s, pools, oh));
-  const order = [["exclude","Exclude existing donors from paid"],["snapRefresh","Refresh Snapchat creative"],
-                 ["fast","48-hour first pickup"],["capi","Click-to-WhatsApp + CAPI"]];
-  order.forEach(([k,l])=>{ if(st.levers[k]){ s = clone(s); s.levers[k] = true; push(l, computePlan(cities, CHANNELS_BASE, s, pools, oh)); }});
-  push("Reallocate budget to target", A.plan);
-  SC = { aug, A, B, C, req, steps };
+  let s = baseSettings();
+  steps.push({ key:"base", label:"September run-rate", plan: computePlan(cities, CHANNELS_BASE, s, pools, oh) });
+  s = clone(s); s.preset = st.preset;
+  steps.push({ key:"react", label:`Reactivation: ${PRESETS[st.preset].label.toLowerCase()}`, plan: computePlan(cities, CHANNELS_BASE, s, pools, oh) });
+  [["exclude","Exclude existing donors from paid"],["snapRefresh","Refresh Snapchat creative"],["fast","48-hour first pickup"],["capi","Click-to-WhatsApp + CAPI"]]
+    .forEach(([k,l])=>{ if(st.levers[k]){ s = clone(s); s.levers[k] = true; steps.push({ key:k, label:l, plan: computePlan(cities, CHANNELS_BASE, s, pools, oh) }); }});
+  steps.push({ key:"realloc", label:"Reallocate budget to target", plan: A.plan });
+  SC = { base: base, A, B, C, req, steps };
 }
-function scheduleScenarios(){
-  clearTimeout(scTimer);
-  scTimer = setTimeout(()=>{ computeScenarios(); renderPlan(); }, 280);
-}
+function scheduleScenarios(){ clearTimeout(scTimer); scTimer = setTimeout(()=>{ computeScenarios(); renderPlan(); }, 250); }
 
-// ---- format ----
-const n0 = v => isFinite(v) ? Math.round(v).toLocaleString("en-US") : "—";
-const n1 = v => isFinite(v) ? v.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1}) : "—";
-const m0 = v => isFinite(v) ? "$"+Math.round(v).toLocaleString("en-US") : "—";
-const m2 = v => isFinite(v) ? "$"+v.toFixed(2) : "—";
-const m3 = v => isFinite(v) ? "$"+v.toFixed(3) : "—";
-const pc = v => isFinite(v) ? (v*100).toFixed(1)+"%" : "—";
-const pc0 = v => isFinite(v) ? Math.round(v*100)+"%" : "—";
-const sg = v => (v>=0?"+":"−");
+// ================= format =================
+const n0 = v => isFinite(v) ? Math.round(v).toLocaleString("en-US") : "-";
+const n1 = v => isFinite(v) ? v.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1}) : "-";
+const m0 = v => isFinite(v) ? "$"+Math.round(v).toLocaleString("en-US") : "-";
+const m2 = v => isFinite(v) ? "$"+v.toFixed(2) : "-";
+const m3 = v => isFinite(v) ? "$"+v.toFixed(3) : "-";
+const pc = v => isFinite(v) ? (v*100).toFixed(1)+"%" : "-";
+const pc0 = v => isFinite(v) ? Math.round(v*100)+"%" : "-";
+const sg = v => v>=0 ? "+" : "−";
+const N = s => `<span class="n">${s}</span>`;
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-// ---- top ----
-function renderTop(){
-  const aug = augPlan();
-  const kgChange = div(P.weight, aug.weight) - 1;
-  document.getElementById("mastMonth").textContent = st.monthLabel;
-  document.getElementById("rKg").innerHTML = n0(P.weight) + "<small>KG</small>";
-  document.getElementById("rKgNote").textContent = `${sg(kgChange)}${pc0(Math.abs(kgChange))} vs August run-rate · ${m0(P.spend)} spend`;
-  document.getElementById("rCpk").textContent = m3(P.cpk);
-  const cpkOk = P.cpk <= st.targetCPK + 1e-6;
-  document.getElementById("rCpkChip").innerHTML = `<span class="chip ${cpkOk?"ok":"bad"}">target ${m2(st.targetCPK)} · ${cpkOk?"met":"over by "+m3(P.cpk-st.targetCPK)}</span>`;
-  document.getElementById("rNew").textContent = n0(P.newDonors);
-  const shOk = P.newShare >= st.targetNewShare - 1e-6;
-  document.getElementById("rNewChip").innerHTML = `<span class="chip ${shOk?"ok":"meh"}">${pc(P.newShare)} of donors · target ${pc0(st.targetNewShare)}</span>`;
-  document.getElementById("rRet").textContent = n0(P.retDonors);
-  document.getElementById("rRetNote").textContent = `${sg(P.retDonors-aug.retDonors)}${n0(Math.abs(P.retDonors-aug.retDonors))} vs August · ${PRESETS[st.preset].label}`;
-  document.getElementById("rDrv").textContent = n0(P.driversNeeded);
-  const gap = P.driversNeeded - P.drivers;
-  document.getElementById("rDrvChip").innerHTML = `<span class="chip ${gap<=0?"ok":"bad"}">${n0(P.drivers)} on the roster${gap>0?" · short "+gap:""}</span>`;
-  document.getElementById("kpis").innerHTML = [
-    ["Total spend", m0(P.spend), `${m0(P.newSpend)} new · ${m0(P.waSpend)} WA · ${m0(P.overhead)} OH`],
-    ["nCAC", m2(P.nCAC), "(paid + organic) ÷ new donors"],
-    ["rCAC", m2(P.rCAC), "WhatsApp spend ÷ returning donors"],
-    ["Cost per new kg", m3(P.cpkNew), `first pickup · ${n1(P.kgNewAvg)} kg each`],
-    ["Cost per returning kg", m3(P.cpkRet), `${n1(P.kgRetAvg)} kg each`],
-    ["New share of kilos", pc0(P.newKgShare), `${n0(P.kgNewTot)} kg`],
-    ["Pickups", n0(P.pickups), `${n0(P.leads)} leads needed`],
-    ["Year-one value of new", m3(div(P.newSpend, P.newDonors*st.firstYearKg)), `per kg over ${st.firstYearKg} kg`]
-  ].map(([l,v,s])=>`<div class="kpi"><span class="eyebrow">${l}</span><b>${v}</b><div class="sub">${s}</div></div>`).join("");
+// ================= render =================
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang==="ar" ? "rtl" : "ltr";
+  document.title = lang==="ar" ? "عون · التوقعات الشهرية" : "Awon · Monthly Forecast";
+  document.querySelectorAll("[data-t]").forEach(el=>{ el.textContent = t(el.dataset.t); });
+  document.querySelectorAll(".lang button").forEach(b=>b.classList.toggle("on", b.dataset.lang===lang));
+  document.getElementById("monthLabel").placeholder = t("monthPh");
 }
 
-// ---- plan tab ----
-function scard(cls, tag, tagcls, title, p, note){
+function renderHero(){
+  const base = basePlan();
+  const d = div(P.weight, base.weight) - 1;
+  const cOk = P.cpk <= st.targetCPK + 1e-6, sOk = P.newShare >= st.targetNewShare - 1e-6;
+  const short = P.driversNeeded - P.drivers;
+  document.getElementById("hero").innerHTML = `
+    <div class="stat"><div class="l">${t("kilos")}</div><span class="v">${n0(P.weight)}<small>${t("kgU")}</small></span>
+      <span class="pill soft">${t("vsAug", N(sg(d)+pc0(Math.abs(d))))}</span></div>
+    <div class="stat"><div class="l">${t("cpk")}</div><span class="v">${m3(P.cpk)}</span>
+      <span class="pill ${cOk?"good":"bad"}">${cOk ? t("onTarget") : t("over", N(m3(P.cpk-st.targetCPK)))}</span></div>
+    <div class="stat"><div class="l">${t("newD")}</div><span class="v">${n0(P.newDonors)}</span>
+      <span class="pill ${sOk?"good":"warn"}">${t("shareOf", N(pc0(P.newShare)), N(pc0(st.targetNewShare)))}</span></div>
+    <div class="stat"><div class="l">${t("retD")}</div><span class="v">${n0(P.retDonors)}</span>
+      <span class="pill ${short>0?"bad":"soft"}">${t("drivers", N(P.driversNeeded), N(P.drivers))}</span></div>`;
+}
+
+function scCard(key, cls, pillCls, pillTxt, p, note){
   const cOk = p.cpk <= st.targetCPK + 1e-6, sOk = p.newShare >= st.targetNewShare - 1e-6;
-  return `<div class="scard ${cls}"><span class="tag ${tagcls}">${tag}</span><h4>${title}</h4>
+  return `<div class="sc ${cls}">
+    <div class="t"><span>${t(key)}</span>${pillTxt?`<span class="pill ${pillCls}">${pillTxt}</span>`:""}</div>
     <dl>
-      <dt>Kilos</dt><dd>${n0(p.weight)}</dd>
-      <dt>Cost per kg</dt><dd class="${cOk?"hit":"miss"}">${m3(p.cpk)}</dd>
-      <dt>New share</dt><dd class="${sOk?"hit":"miss"}">${pc(p.newShare)}</dd>
-      <dt>New donors</dt><dd>${n0(p.newDonors)}</dd>
-      <dt>Returning donors</dt><dd>${n0(p.retDonors)}</dd>
-      <dt>Spend</dt><dd>${m0(p.spend)}</dd>
-      <dt>Drivers needed</dt><dd>${n0(p.driversNeeded)}</dd>
-    </dl><p>${note}</p></div>`;
+      <dt>${t("kg")}</dt><dd class="n">${n0(p.weight)}</dd>
+      <dt>${t("cpk")}</dt><dd class="n ${cOk?"good":"bad"}">${m3(p.cpk)}</dd>
+      <dt>${t("share")}</dt><dd class="n ${sOk?"good":"bad"}">${pc0(p.newShare)}</dd>
+    </dl>
+    <div class="note">${note}</div></div>`;
 }
 
 function renderPlan(){
   const el = document.getElementById("panel-plan");
-  if(!SC){ el.innerHTML = `<div class="sec"><p class="note">Working out the scenarios…</p></div>`; return; }
-  const { aug, A, B, C, req, steps } = SC;
-  const kgMax = Math.max(...steps.map(s=>s.plan.weight));
-  const wf = steps.map((s,i)=>{
-    const prev = i ? steps[i-1].plan.weight : 0, w = s.plan.weight;
-    return `<div class="wrow"><div>${esc(s.label)}</div>
-      <div class="wtrack"><div class="wfill ${i?"gain":""}" style="width:${div(w,kgMax)*100}%"></div></div>
-      <div class="wval">${n0(w)}${i?`<div style="font-size:10.5px;color:var(--ok);font-weight:500">${sg(w-prev)}${n0(Math.abs(w-prev))}</div>`:""}</div>
-      <div class="wval" style="color:${s.plan.cpk<=st.targetCPK+1e-6?"var(--ok)":"var(--alert)"}">${m3(s.plan.cpk)}</div></div>`;
+  const targetsCard = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="row">
+          <div class="field"><label>${t("tCpk")}</label><input type="number" step="0.005" id="tCPK" value="${st.targetCPK}"></div>
+          <div class="field"><label>${t("tShare")}</label><input type="number" step="0.01" id="tShare" value="${st.targetNewShare}"></div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="augBtn">${t("resetAug")}</button>
+          <button class="btn primary" id="optBtn">${t("optimise")}</button>
+        </div>
+      </div>
+    </div>`;
+  if(!SC){ el.innerHTML = targetsCard; return; }
+  const { base: base, A, B, C } = SC;
+  const allOk = A.plan.newShare >= st.targetNewShare - 1e-6;
+  const ratio = div(base.cpkNew, base.cpkRet);
+
+  const cardA = scCard("scA","rec","good",t("rec"), A.plan, t("noteA", N("+"+pc0(div(A.plan.newDonors, base.newDonors)-1))));
+  const cardB = B ? scCard("scB","","warn", B.plan.weight < base.weight ? t("fewer") : "", B.plan,
+      B.plan.weight < base.weight ? t("noteB", N(pc0(1-B.returnScale)), N(n0(base.weight-B.plan.weight))) : t("noteBmore", N(pc0(1-B.returnScale))))
+    : `<div class="sc"><div class="t"><span>${t("scB")}</span><span class="pill bad">${t("infeasible")}</span></div></div>`;
+  const cardC = scCard("scC","","bad", C.plan.cpk > st.targetCPK ? t("over2") : "", C.plan,
+      C.capped ? t("noteC", N(pc0(C.plan.newShare))) : t("noteCok", N(m3(C.plan.cpk))));
+
+  const kgMax = Math.max(...SC.steps.map(s=>s.plan.weight));
+  const steps = SC.steps.map((s,i)=>{
+    const prev = i ? SC.steps[i-1].plan.weight : 0;
+    return `<div class="step ${i===SC.steps.length-1?"last":""}">
+      <div>${t("step_"+s.key)}</div>
+      <div class="track"><div class="fill" style="width:${div(s.plan.weight,kgMax)*100}%"></div></div>
+      <div class="n">${n0(s.plan.weight)}${i?`<span class="d">${sg(s.plan.weight-prev)}${n0(Math.abs(s.plan.weight-prev))}</span>`:""}</div>
+    </div>`;
   }).join("");
 
-  const newKg = aug.cpkNew, retKg = aug.cpkRet;
-  el.innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">Targets</div>
-    <h3>${esc(st.monthLabel)}: ${m2(st.targetCPK)} per kg, ${pc0(st.targetNewShare)} new donors, and as many returning as the base will give</h3>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:12px 0 4px">
-      <div class="field light"><label>Target cost per kg</label><input class="mono" type="number" step="0.005" id="tCPK" value="${st.targetCPK}"></div>
-      <div class="field light"><label>Target new share</label><input class="mono" type="number" step="0.01" id="tShare" value="${st.targetNewShare}"></div>
-      <div class="field light"><label>Days in month</label><input class="mono" type="number" id="tDays" value="${st.daysInMonth}"></div>
+  const short = A.plan.driversNeeded - A.plan.drivers;
+  const partner = A.channels.find(c=>c.id==="partner");
+  el.innerHTML = targetsCard + `
+    <div class="card">
+      <p class="verdict">${allOk ? t("verdictOk", N(m2(st.targetCPK))) : t("verdict", N(m2(st.targetCPK)), N(pc0(st.targetNewShare)))}</p>
+      <p class="lead">${t("verdictBody", N(Math.round(ratio)))}</p>
+      <div class="scen">${cardA}${cardB}${cardC}</div>
+      ${allOk ? "" : `<p class="foot" style="margin-top:14px">${t("suggest", N(n0(Math.floor(A.plan.newDonors/100)*100)+"+"))}</p>`}
     </div>
-  </div>
-
-  <div class="sec">
-    <div class="eyebrow">The three targets, tested together</div>
-    <h3>You can have two of them. Not all three.</h3>
-    <p class="note">A new donor's first-pickup kilos cost ${m3(newKg)} each in August; a returning donor's cost ${m3(retKg)}.
-      That's ${n1(div(newKg,retKg))}× apart. Every returning donor you add pulls the cost per kg down and the new share down with it,
-      so maximising returning and hitting ${pc0(st.targetNewShare)} new pull in opposite directions.</p>
-    <div class="scen">
-      ${scard("rec","Recommended","ok","A · Most kilos at "+m2(st.targetCPK), A.plan,
-        `Returning at ${PRESETS[st.preset].label.toLowerCase()}, then new donors bought cheapest-first until cost per kg hits target. New donors grow ${pc0(div(A.plan.newDonors,aug.newDonors)-1)} on August — but returning grows faster, so the share lands at ${pc0(A.plan.newShare)}.`)}
-      ${B ? scard("meh","Both ratios","meh","B · "+pc0(st.targetNewShare)+" new and "+m2(st.targetCPK), B.plan,
-        `Only reachable by switching off ${pc0(1-B.returnScale)} of the returning program — ${n0(A.plan.retDonors-B.plan.retDonors)} donors available at about $1 each — and collecting ${pc0(Math.abs(div(B.plan.weight,aug.weight)-1))} ${B.plan.weight<aug.weight?"fewer":"more"} kilos than August.`)
-        : `<div class="scard bad"><span class="tag bad">Infeasible</span><h4>B · Both ratios</h4><p>No combination of returning volume and channel spend meets both ratio targets.</p></div>`}
-      ${scard("bad","Over budget","bad","C · "+pc0(st.targetNewShare)+" new with max returning", C.plan,
-        C.capped ? `Every channel at its ceiling still only reaches ${pc0(C.plan.newShare)} new, at ${m3(C.plan.cpk)} per kg — ${pc0(div(C.plan.cpk,st.targetCPK)-1)} over target.`
-                 : `Reaches ${pc0(st.targetNewShare)} new, but at ${m3(C.plan.cpk)} per kg.`)}
-      ${scard("base","Reference","","August run-rate", aug, `Reconstructed from August spends and reactivation. Matches the actual 5.9K new / 13.0K returning.`)}
-    </div>
-    <div class="flag warn" style="margin-top:16px">
-      <b>What it would take to hit all three.</b> With returning at maximum (${n0(A.plan.retDonors)}), ${pc0(st.targetNewShare)} new means
-      ${n0(req.N)} new donors — at an nCAC of ${m2(req.ncac)} or less to stay on ${m2(st.targetCPK)}. August ran at ${m2(aug.nCAC)};
-      the optimised plan gets it to ${m2(A.plan.nCAC)}. No lever in the evidence closes the rest of that gap in one month.
-    </div>
-    <div class="flag ok">
-      <b>The recommendation: keep ${m2(st.targetCPK)}, replace the share target with a volume target.</b> Plan A grows new donors
-      from ${n0(aug.newDonors)} to ${n0(A.plan.newDonors)} — the acquisition growth the share target was meant to force — without
-      penalising the team for bringing ${n0(A.plan.retDonors-aug.retDonors)} extra returning donors back. Set October's acquisition goal
-      as <b>${n0(Math.floor(A.plan.newDonors/100)*100)}+ new donors</b>, and keep share as a reported metric rather than a target.
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="eyebrow">From August to plan A</div>
-    <h3>Where the extra kilos come from</h3>
-    <p class="note">Each step adds one change on top of the last. The final step reallocates the paid budget cheapest-first
-      until cost per kg reaches ${m2(st.targetCPK)}. Right-hand column is the cost per kg after each step.</p>
-    <div class="wf">${wf}</div>
-    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn solid" id="applyA">Apply plan A to the inputs</button>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="eyebrow">Risks to plan A</div>
-    <h3>What has to be true for October to land</h3>
-    <div class="flag ${A.plan.driversNeeded>A.plan.drivers?"":"ok"}"><b>Fleet.</b> Plan A needs ${n0(A.plan.driversNeeded)} drivers against
-      ${n0(A.plan.drivers)} on the roster at ${st.maxPPD} pickups a day. ${A.plan.driversNeeded>A.plan.drivers
-      ? `Without ${A.plan.driversNeeded-A.plan.drivers} more, the extra returning donors become cancelled bookings — which also spends WhatsApp money for nothing.`
-      : "The current fleet covers it."}</div>
-    <div class="flag warn"><b>The partner channel doesn't exist yet.</b> Plan A spends ${m0(A.channels.find(c=>c.id==="partner").spend)} on
-      co-branded partner campaigns at ALDERAYEA's historical ~$12 per new donor. Without it, new donors fall by about 1,000 and the plan
-      collects roughly 25K fewer kilos at the same cost per kg.</div>
-    <div class="flag warn"><b>Returning at maximum is a stretch.</b> It assumes 19% of due donors and 7.5% of lapsing donors give in a single
-      month. August's push lifted the old-customers source 2.5×, so it's possible — but it has only been done in bursts. Keep the
-      ~4-month gap between asks: returning bags are already ${n1(aug.kgNewAvg-aug.kgRetAvg)} kg lighter than first pickups.</div>
-    <div class="flag info"><b>Cutting Snapchat has a halo risk.</b> The dashboard analysis found paid spend in a city moves with organic
-      and WhatsApp leads. It's correlational, and switching the halo on (Returning tab settings) moves plan A by under 1%, but watch organic volume in week one.</div>
-  </div>`;
+    <div class="grid2">
+      <div class="card"><h2>${t("bridge")}</h2><div class="steps" style="margin-top:14px">${steps}</div></div>
+      <div class="card"><h2>${t("watch")}</h2>
+        <div class="watch" style="grid-template-columns:1fr;margin-top:14px">
+          <div class="w ${short>0?"bad":"good"}"><span class="dot"></span><span>${short>0 ? t("wDrivers", short) : t("wDriversOk")}</span></div>
+          ${partner && partner.spend>0 ? `<div class="w warn"><span class="dot"></span><span>${t("wPartner")}</span></div>` : ""}
+          ${st.preset==="max" ? `<div class="w warn"><span class="dot"></span><span>${t("wReact")}</span></div>` : ""}
+        </div>
+        <p class="foot" style="margin-top:14px">${t("check", N(n0(base.newDonors)), N(n0(base.retDonors)))}</p>
+      </div>
+    </div>`;
 }
 
-// ---- new donors tab ----
-function renderNew(){
+function renderBudget(){
+  const levers = ["exclude","snapRefresh","fast","capi"].map(k=>`
+    <div class="lever ${st.levers[k]?"on":""}" data-lever="${k}" role="switch" aria-checked="${st.levers[k]}" tabindex="0">
+      <span class="sw"></span><div><div class="lt">${t("lv_"+k)}</div><div class="ls">${t("ls_"+k)}</div></div></div>`).join("");
   const rows = P.chRows.map(c=>{
     const fixed = c.kind==="fixed";
     const kg = c.donors * P.kgNewAvg;
-    return `<tr>
-      <td>${esc(c.name)}</td>
-      <td class="calc soft">${fixed?"volume":"scales"}</td>
-      <td><input class="cell" type="number" step="250" data-ch="${c.id}" data-key="spend" value="${Math.round(c.spend)}"></td>
-      <td>${fixed ? `<input class="cell" type="number" step="50" data-ch="${c.id}" data-key="donors" value="${Math.round(c.donors)}">`
-                  : `<input class="cell" type="number" step="0.5" data-ch="${c.id}" data-key="cpnd" value="${c.cpnd}">`}</td>
-      <td class="calc">${fixed ? "—" : m2(c.cpndEff)}</td>
-      <td class="calc">${n0(c.donors)}</td>
-      <td class="calc soft">${n0(kg)}</td>
-      <td class="calc" style="${div(c.spend,kg)>st.targetCPK*2?"color:var(--alert)":""}">${c.spend>0?m3(div(c.spend,kg)):"—"}</td>
-      <td class="calc soft">${c.spend>0?m3(div(c.spend,c.donors*st.firstYearKg)):"—"}</td>
-      <td class="calc soft">${fixed?"—":m0(c.cap)}</td></tr>`;
+    const cpk = div(c.spend, kg);
+    return `<tr><td>${t("ch_"+c.id)}</td>
+      <td><input type="number" step="250" data-ch="${c.id}" data-key="spend" value="${Math.round(c.spend)}"></td>
+      <td>${fixed ? `<span class="n dim">${c.donors>0?m2(div(c.spend,c.donors)):"-"}</span>`
+                  : `<input type="number" step="0.5" data-ch="${c.id}" data-key="cpnd" value="${c.cpnd}">`}</td>
+      <td class="n">${fixed ? `<input type="number" step="50" data-ch="${c.id}" data-key="donors" value="${Math.round(c.donors)}">` : n0(c.donors)}</td>
+      <td class="n">${c.spend>0 ? m3(cpk) : "-"}</td></tr>`;
   }).join("");
-  const leverRows = Object.entries(LEVER_INFO).map(([k,v])=>`
-    <label class="lever"><input type="checkbox" data-lever="${k}" ${st.levers[k]?"checked":""}>
-      <div><b>${esc(v.label)}</b><p>${esc(v.detail)}</p></div>
-      <div class="imp">${st.levers[k]?"on":"off"}</div></label>`).join("");
-  const tot = P.chRows.reduce((a,c)=>({spend:a.spend+c.spend, donors:a.donors+c.donors}),{spend:0,donors:0});
-  document.getElementById("panel-new").innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">Acquisition levers</div>
-    <h3>What changes about buying new donors in ${esc(st.monthLabel)}</h3>
-    <p class="note">Each lever is taken from the cohort analysis. The effect sizes are assumptions, stated plainly, so they can be argued with.</p>
-    ${leverRows}
-  </div>
-  <div class="sec">
-    <div class="eyebrow">Channel plan</div>
-    <h3>Spend and cost per new donor by channel</h3>
-    <p class="note">Cost per new donor is August–September actuals (Supermetrics spend ÷ genuinely new phones). Scaling channels get
-      dearer as spend rises — cost per donor moves with spend<sup>${st.elasticity}</sup> around August's level — which is why the optimiser
-      stops adding Google at some point rather than pouring everything in. Right-hand columns: first-pickup cost per kg, and the same
-      spread over a new donor's ${st.firstYearKg} kg first year.</p>
-    <div class="scroll"><table>
-      <thead><tr><th>Channel</th><th>Type</th><th>Spend $</th><th>CPND $ / donors</th><th>Effective CPND</th><th>New donors</th>
-        <th>First-pickup kg</th><th>$ per kg</th><th>$ per year-one kg</th><th>Ceiling</th></tr></thead>
-      <tbody>${rows}
-        ${P.fastDonors?`<tr><td>48-hour first-pickup guarantee</td><td class="calc soft">lever</td><td class="calc">$0</td><td class="calc soft">—</td><td class="calc">—</td><td class="calc">${n0(P.fastDonors)}</td><td class="calc soft">${n0(P.fastDonors*P.kgNewAvg)}</td><td class="calc">—</td><td class="calc">—</td><td class="calc">—</td></tr>`:""}
-        ${P.capiDonors?`<tr><td>Click-to-WhatsApp + CAPI</td><td class="calc soft">lever</td><td class="calc">${m0(P.capiSpend)}</td><td class="calc soft">—</td><td class="calc">${m2(div(P.capiSpend,P.capiDonors))}</td><td class="calc">${n0(P.capiDonors)}</td><td class="calc soft">${n0(P.capiDonors*P.kgNewAvg)}</td><td class="calc">${m3(div(P.capiSpend,P.capiDonors*P.kgNewAvg))}</td><td class="calc">—</td><td class="calc">—</td></tr>`:""}
-        ${P.haloNew?`<tr><td>Halo effect on organic</td><td class="calc soft">sensitivity</td><td class="calc">—</td><td class="calc soft">—</td><td class="calc">—</td><td class="calc">${n0(P.haloNew)}</td><td class="calc soft">${n0(P.haloNew*P.kgNewAvg)}</td><td class="calc">—</td><td class="calc">—</td><td class="calc">—</td></tr>`:""}
-        <tr class="total"><td>Total</td><td></td><td>${m0(P.newSpend)}</td><td></td><td>${m2(P.nCAC)}</td><td>${n0(P.newDonors)}</td>
-          <td>${n0(P.kgNewTot)}</td><td>${m3(P.cpkNew)}</td><td>${m3(div(P.newSpend,P.newDonors*st.firstYearKg))}</td><td></td></tr>
-      </tbody></table></div>
-    <div class="flag info"><b>Meta and TikTok.</b> At ${m0(215)} and ${m0(138)} per genuinely new donor, they cost 7–12× Google.
-      The optimiser zeroes them for acquisition. If they're doing awareness work you value, fund that from branding — not from the budget that's measured on cost per kg.</div>
-  </div>`;
+  const leverRows = [["fast",P.fastDonors,0],["capi",P.capiDonors,P.capiSpend],["halo",P.haloNew,0]]
+    .filter(([,d])=>d).map(([k,d,s])=>`<tr><td>${t("ch_"+k)}</td><td class="n dim">${m0(s)}</td><td class="n dim">-</td>
+      <td class="n">${n0(d)}</td><td class="n dim">${s?m3(div(s,d*P.kgNewAvg)):"-"}</td></tr>`).join("");
+  const ohRows = overhead.map(r=>`<tr>
+    <td><select data-oh="${r.id}" data-key="type">${OH_TYPES.map(x=>`<option value="${esc(x)}" ${x===r.type?"selected":""}>${esc(ohTypeName(x))}</option>`).join("")}</select></td>
+    <td><input class="txt" data-oh="${r.id}" data-key="item" value="${esc(r.item)}"></td>
+    <td><input type="number" step="50" data-oh="${r.id}" data-key="total" value="${r.total}"></td>
+    <td><input type="number" step="0.05" min="0" max="1" data-oh="${r.id}" data-key="awonPct" value="${r.awonPct}"></td>
+    <td class="n">${m0(r.total*r.awonPct)}</td>
+    <td><button class="rm" data-ohrm="${r.id}" aria-label="remove">×</button></td></tr>`).join("");
+
+  document.getElementById("panel-budget").innerHTML = `
+    <div class="card"><h2>${t("levers")}</h2><div class="levers" style="margin-top:14px">${levers}</div></div>
+    <div class="card"><h2>${t("channels")}</h2>
+      <div class="tbl" style="margin-top:14px"><table>
+        <thead><tr><th>${t("colChannel")}</th><th>${t("colSpend")}</th>
+          <th>${t("colCpnd")}<span class="info" title="${esc(t("cpndTip"))}">i</span></th>
+          <th>${t("colNew")}</th><th>${t("colCpk")}</th></tr></thead>
+        <tbody>${rows}${leverRows}
+          <tr class="tot"><td>${t("total")}</td><td class="n">${m0(P.newSpend)}</td><td class="n">${m2(P.nCAC)}</td>
+            <td class="n">${n0(P.newDonors)}</td><td class="n">${m3(P.cpkNew)}</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="card"><details><summary>${t("overhead")} · <span class="n">${m0(ohAwon())}</span></summary>
+      <div class="inner"><p class="lead">${t("overheadLead")}</p>
+        <div class="tbl"><table>
+          <thead><tr><th>${t("colType")}</th><th>${t("colItem")}</th><th>${t("colBudget")}</th><th>${t("colAwonPct")}</th><th>${t("colAwon")}</th><th></th></tr></thead>
+          <tbody>${ohRows}
+            <tr class="tot"><td>${t("total")}</td><td></td><td class="n">${m0(ohAwon()+ohSutra())}</td><td class="n">${pc0(div(ohAwon(),ohAwon()+ohSutra()))}</td><td class="n">${m0(ohAwon())}</td><td></td></tr>
+          </tbody></table></div>
+        <button class="btn ghost" id="addOh" style="margin-top:12px">${t("addLine")}</button>
+      </div></details></div>`;
 }
 
-// ---- returning tab ----
 function renderRet(){
   const pr = PRESETS[st.preset];
-  const pills = ["baseline","alwayson","max"].map(k=>
-    `<button class="pill ${st.preset===k?"on":""}" data-preset="${k}">${PRESETS[k].label}</button>`).join("") +
-    (st.preset==="custom" ? `<button class="pill on">Custom</button>` : "");
-  const segTot = {};
-  SEGMENTS.forEach(s=>{ segTot[s.key] = P.rows.reduce((a,r)=>{
-    const x = r.segRows.find(y=>y.key===s.key); return { pool:a.pool+x.pool, donors:a.donors+x.donors, spend:a.spend+x.spend };
-  }, {pool:0,donors:0,spend:0}); });
-  const segRows = SEGMENTS.map(s=>`<tr>
-    <td>${s.label}</td>
-    <td><input class="cell" type="number" step="100" data-pool="${s.key}" value="${pools[s.key]}"></td>
-    <td class="calc soft">${n0(segTot[s.key].pool)}</td>
-    <td><input class="cell" type="number" step="0.005" data-rate="${s.key}" value="${pr.rate[s.key]}"></td>
-    <td><input class="cell" type="number" step="0.05" data-rcac="${s.key}" value="${pr.rcac[s.key]}"></td>
-    <td class="calc">${n0(segTot[s.key].donors)}</td>
-    <td class="calc">${m0(segTot[s.key].spend)}</td>
-    <td class="calc soft">${m3(div(segTot[s.key].spend, segTot[s.key].donors*P.kgRetAvg))}</td></tr>`).join("");
-  const cityRows = P.rows.map(r=>`<tr>
-    <td>${esc(r.city)}</td>
-    <td class="calc soft">${pc(r.baseShare)}</td>
-    <td><input class="cell" type="number" step="0.01" data-city="${r.id}" data-key="repeatIdx" value="${r.repeatIdx}"></td>
-    ${r.segRows.map(x=>`<td class="calc soft">${n0(x.donors)}</td>`).join("")}
-    <td class="calc">${n0(r.retDonors)}</td>
-    <td class="calc">${m0(r.waSpend)}</td>
-    <td class="calc soft">${m2(r.rCAC)}</td>
-    <td class="calc soft">${n1(r.kgRet)}</td>
-    <td class="calc">${n0(r.kgRetTot)}</td></tr>`).join("");
+  const seg = ["baseline","alwayson","max"].map(k=>`<button class="${st.preset===k?"on":""}" data-preset="${k}">${t("pr_"+k)}</button>`).join("")
+    + (st.preset==="custom" ? `<button class="on">${t("pr_custom")}</button>` : "");
+  const tot = {};
+  SEGMENTS.forEach(s=>{ tot[s.key] = P.rows.reduce((a,r)=>{ const x = r.segRows.find(y=>y.key===s.key);
+    return { donors:a.donors+x.donors, spend:a.spend+x.spend }; }, { donors:0, spend:0 }); });
+  const rows = SEGMENTS.map(s=>`<tr><td>${t("seg_"+s.key)}</td>
+    <td><input type="number" step="100" data-pool="${s.key}" value="${pools[s.key]}"></td>
+    <td><input type="number" step="0.005" data-rate="${s.key}" value="${pr.rate[s.key]}"></td>
+    <td><input type="number" step="0.05" data-rcac="${s.key}" value="${pr.rcac[s.key]}"></td>
+    <td class="n">${n0(tot[s.key].donors)}</td><td class="n">${m0(tot[s.key].spend)}</td></tr>`).join("");
+  const sets = ["served","kgRatio","baseNewShare","elasticity","maxPPD","firstYearKg","halo"].map(k=>
+    `<div class="field"><label>${t("set_"+k)}</label><input type="number" step="${k==="maxPPD"||k==="halo"?1:0.01}" data-set="${k}" value="${st[k]}"></div>`).join("");
   document.getElementById("panel-ret").innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">Reactivation program</div>
-    <h3>Returning donors come from the base, not the budget</h3>
-    <p class="note">Each month a share of every recency segment donates again. The August run-rate is calibrated so it reproduces
-      August exactly: ${n0(AUG_ACTUAL.retDonors)} returning donors on about $11.2K of WhatsApp spend. The other two raise the monthly return
-      rate on due, lapsing and dormant donors — active donors are left alone, because asking inside 90 days means lighter bags.</p>
-    <div class="pills">${pills}</div>
-    <div class="scroll"><table>
-      <thead><tr><th>Segment</th><th>Pool, all cities</th><th>Pool, served cities</th><th>Monthly return rate</th><th>rCAC $</th>
-        <th>Returning donors</th><th>WhatsApp spend</th><th>$ per kg</th></tr></thead>
-      <tbody>${segRows}
-        <tr class="total"><td>Total</td><td>${n0(Object.values(pools).reduce((a,b)=>a+b,0))}</td>
-          <td>${n0(SEGMENTS.reduce((a,s)=>a+segTot[s.key].pool,0))}</td><td></td><td>${m2(P.rCAC)}</td>
-          <td>${n0(P.retDonors)}</td><td>${m0(P.waSpend)}</td><td>${m3(P.cpkRet)}</td></tr>
-      </tbody></table></div>
-    <div class="legendkey"><span>Pools are the donor base on 20 Sep 2026 from the cohort analysis.
-      ${pc0(st.served)} sits in cities still served.</span></div>
-  </div>
-  <div class="sec">
-    <div class="eyebrow">By city</div>
-    <h3>Returning donors per city</h3>
-    <p class="note">Each city gets its share of the base, then a repeat index: Makkah donors repeat at 19% over twelve months against
-      36–37% in Riyadh and Jeddah, so Mecca's index is 0.53.</p>
-    <div class="scroll"><table>
-      <thead><tr><th>City</th><th>Share of base</th><th>Repeat index</th><th>Active</th><th>Due</th><th>Lapsing</th><th>Dormant</th>
-        <th>Returning donors</th><th>WhatsApp $</th><th>rCAC</th><th>kg / pickup</th><th>Returning kg</th></tr></thead>
-      <tbody>${cityRows}
-        <tr class="total"><td>Total</td><td>100%</td><td></td>
-          ${SEGMENTS.map(s=>`<td>${n0(segTot[s.key].donors)}</td>`).join("")}
-          <td>${n0(P.retDonors)}</td><td>${m0(P.waSpend)}</td><td>${m2(P.rCAC)}</td><td>${n1(P.kgRetAvg)}</td><td>${n0(P.kgRetTot)}</td></tr>
-      </tbody></table></div>
-  </div>
-  <div class="sec">
-    <div class="eyebrow">Model settings</div>
-    <h3>Assumptions behind both sides of the plan</h3>
-    <div style="display:flex;gap:14px;flex-wrap:wrap">
-      ${[["served","Share of base in served cities",0.01],["kgRatio","First pickup ÷ returning kg",0.01],
-         ["baseNewShare","New share when kg measured",0.01],["elasticity","Cost-per-donor elasticity",0.05],
-         ["maxPPD","Max pickups / driver / day",1],["firstYearKg","Year-one kg per new donor",0.5],
-         ["halo","Halo: new donors per $1K paid",1]]
-        .map(([k,l,s])=>`<div class="field light"><label>${l}</label><input class="mono" type="number" step="${s}" data-set="${k}" value="${st[k]}"></div>`).join("")}
+    <div class="card"><h2>${t("program")}</h2><p class="lead">${t("programLead")}</p>
+      <div class="seg">${seg}</div>
+      <div class="tbl"><table>
+        <thead><tr><th>${t("colSeg")}</th><th>${t("colInBase")}</th><th>${t("colRate")}</th><th>${t("colRcac")}</th><th>${t("colRet")}</th><th>${t("colWa")}</th></tr></thead>
+        <tbody>${rows}
+          <tr class="tot"><td>${t("total")}</td><td class="n">${n0(Object.values(pools).reduce((a,b)=>a+b,0))}</td><td></td>
+            <td class="n">${m2(P.rCAC)}</td><td class="n">${n0(P.retDonors)}</td><td class="n">${m0(P.waSpend)}</td></tr>
+        </tbody></table></div>
     </div>
-  </div>`;
+    <div class="card"><details><summary>${t("settings")}</summary><div class="inner"><div class="row">${sets}</div></div></details></div>`;
 }
 
-// ---- city tab ----
 function renderCity(){
-  const rows = P.rows.map(r=>`<tr>
-    <td>${esc(r.city)}</td>
-    <td><input class="cell" type="number" step="1" data-city="${r.id}" data-key="drivers" value="${r.drivers}"></td>
-    <td><input class="cell" type="number" step="1" data-city="${r.id}" data-key="days" value="${r.days}"></td>
-    <td class="calc">${n0(r.newDonors)}</td><td class="calc">${n0(r.retDonors)}</td>
-    <td class="calc soft">${pc0(r.newShare)}</td>
-    <td class="calc">${n0(r.pickups)}</td><td class="calc soft">${n1(r.ppd)}</td>
-    <td class="calc soft">${n1(r.kgNew)} / ${n1(r.kgRet)}</td>
-    <td class="calc">${n0(r.weight)}</td>
-    <td class="calc">${m0(r.newSpend)}</td><td class="calc">${m0(r.waSpend)}</td><td class="calc soft">${m0(r.ohShare)}</td>
-    <td class="calc">${m0(r.spend)}</td>
-    <td class="calc" style="color:${r.cpk<=st.targetCPK?"var(--ok)":"var(--alert)"}">${m3(r.cpk)}</td>
-    <td class="calc soft">${m2(r.nCAC)}</td><td class="calc soft">${m2(r.rCAC)}</td>
-    <td class="calc" style="${r.driversNeeded>r.drivers?"color:var(--alert);font-weight:600":""}">${r.driversNeeded}</td>
-    <td class="calc" style="${r.carUse>1?"color:var(--alert);font-weight:600":""}">${pc0(r.carUse)}</td>
-    <td class="calc soft">${n0(r.leads)}</td></tr>`).join("");
+  const rows = P.rows.map(r=>{
+    const shortC = r.driversNeeded > r.drivers;
+    return `<tr><td>${esc(cityName(r.city))}</td>
+      <td><input type="number" step="1" data-city="${r.id}" data-key="drivers" value="${r.drivers}"></td>
+      <td><input type="number" step="1" data-city="${r.id}" data-key="days" value="${r.days}"></td>
+      <td class="n">${n0(r.newDonors)}</td><td class="n">${n0(r.retDonors)}</td>
+      <td class="n">${n0(r.weight)}</td><td class="n">${m0(r.spend)}</td>
+      <td class="n ${r.cpk<=st.targetCPK?"good":"bad"}">${m3(r.cpk)}</td>
+      <td class="n ${shortC?"bad":""}">${r.driversNeeded}</td></tr>`;
+  }).join("");
   document.getElementById("panel-city").innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">City forecast</div>
-    <h3>${esc(st.monthLabel)} by city</h3>
-    <p class="note">Paid new donors land where the paid budget lands (the old forecast's paid budget split); partner, organic and
-      WhatsApp donors land in proportion to each city's share of the base. Overhead is spread on driver share, as before.</p>
-    <div class="scroll"><table>
-      <thead><tr><th>City</th><th>Drivers</th><th>Days</th><th>New</th><th>Returning</th><th>New share</th><th>Pickups</th>
-        <th>Pickups / driver / day</th><th>kg / pickup new / ret</th><th>Kilos</th><th>New $</th><th>WhatsApp $</th><th>Overhead</th>
-        <th>City spend</th><th>CPK</th><th>nCAC</th><th>rCAC</th><th>Drivers needed</th><th>Car use</th><th>Leads needed</th></tr></thead>
-      <tbody>${rows}
-        <tr class="total"><td>Total</td><td>${n0(P.drivers)}</td><td>—</td><td>${n0(P.newDonors)}</td><td>${n0(P.retDonors)}</td>
-          <td>${pc0(P.newShare)}</td><td>${n0(P.pickups)}</td><td>—</td><td>${n1(P.kgNewAvg)} / ${n1(P.kgRetAvg)}</td>
-          <td>${n0(P.weight)}</td><td>${m0(P.newSpend)}</td><td>${m0(P.waSpend)}</td><td>${m0(P.overhead)}</td><td>${m0(P.spend)}</td>
-          <td>${m3(P.cpk)}</td><td>${m2(P.nCAC)}</td><td>${m2(P.rCAC)}</td><td>${n0(P.driversNeeded)}</td><td>—</td><td>${n0(P.leads)}</td></tr>
-      </tbody></table></div>
-    ${P.rows.some(r=>r.driversNeeded>r.drivers) ? `<div class="flag"><b>Short on drivers:</b> ${P.rows.filter(r=>r.driversNeeded>r.drivers)
-      .map(r=>`${esc(r.city)} needs ${r.driversNeeded} (has ${r.drivers})`).join(" · ")}. A driver is counted short if pickups exceed
-      ${st.maxPPD} a day or kilos exceed car capacity.</div>` : ""}
-  </div>`;
-}
-
-// ---- overhead tab ----
-function renderOverhead(){
-  const rows = overhead.map(r=>`<tr>
-    <td><select class="cell" data-oh="${r.id}" data-key="type">
-      ${OH_TYPES.map(t=>`<option ${t===r.type?"selected":""}>${esc(t)}</option>`).join("")}</select></td>
-    <td><input class="cell text" data-oh="${r.id}" data-key="item" value="${esc(r.item)}"></td>
-    <td><input class="cell" type="number" step="50" data-oh="${r.id}" data-key="total" value="${r.total}"></td>
-    <td><input class="cell" type="number" step="0.05" min="0" max="1" data-oh="${r.id}" data-key="awonPct" value="${r.awonPct}"></td>
-    <td class="calc">${m0(r.total*r.awonPct)}</td><td class="calc soft">${m0(r.total*(1-r.awonPct))}</td>
-    <td><button class="rm" data-ohrm="${r.id}">×</button></td></tr>`).join("");
-  document.getElementById("panel-overhead").innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">Shared cost pool</div>
-    <h3>Marketing overhead</h3>
-    <p class="note">Only Awon's share enters this forecast. It lands on cities by driver share and counts toward cost per kg.</p>
-    <div class="scroll"><table>
-      <thead><tr><th>Cost type</th><th>Line item</th><th>Budget</th><th>Awon share</th><th>Awon $</th><th>Sutra $</th><th></th></tr></thead>
-      <tbody>${rows}
-        <tr class="total"><td>Total</td><td></td><td>${m0(ohAwon()+ohSutra())}</td><td>${pc0(div(ohAwon(),ohAwon()+ohSutra()))}</td>
-          <td>${m0(ohAwon())}</td><td>${m0(ohSutra())}</td><td></td></tr></tbody></table></div>
-    <div style="margin-top:12px"><button class="btn line" id="addOh">Add cost line</button></div>
-  </div>`;
-}
-
-// ---- baseline tab ----
-function renderBase(){
-  const a = augPlan();
-  const row = (l, model, actual, f, note) => `<tr><td>${l}</td><td class="calc">${f(model)}</td><td class="calc">${actual===null?"—":f(actual)}</td>
-    <td class="calc soft">${actual===null?"—":sg(model/actual-1)+pc(Math.abs(model/actual-1))}</td><td class="txt">${note}</td></tr>`;
-  document.getElementById("panel-base").innerHTML = `
-  <div class="sec">
-    <div class="eyebrow">Validation</div>
-    <h3>Does the model reproduce August?</h3>
-    <p class="note">The model run with August's channel spends, no levers, and the calibrated reactivation rates, against what August actually did.</p>
-    <div class="scroll"><table>
-      <thead><tr><th>Measure</th><th>Model</th><th>Actual</th><th>Gap</th><th>Actual from</th></tr></thead>
-      <tbody>
-        ${row("New donors", a.newDonors, AUG_ACTUAL.newDonors, n0, "Cohort analysis, phone-matched across Odoo and legacy")}
-        ${row("Returning donors", a.retDonors, AUG_ACTUAL.retDonors, n0, "Cohort analysis")}
-        ${row("New share", a.newShare, AUG_ACTUAL.newDonors/(AUG_ACTUAL.newDonors+AUG_ACTUAL.retDonors), pc, "Cohort analysis")}
-        ${row("Kilos", a.weight, AUG_ACTUAL.kgFull, n0, "MTD tab, 293,696 kg over 19 of 27 days, pro-rated")}
-        ${row("Spend", a.spend, AUG_ACTUAL.spendFull, m0, "MTD tab, $68,447 over 23 of 31 days, pro-rated")}
-        ${row("Cost per kg", a.cpk, AUG_ACTUAL.spendFull/AUG_ACTUAL.kgFull, m3, "Derived")}
-        ${row("nCAC", a.nCAC, null, m2, "Paid-only cost per new donor was $28 in Aug–Sep")}
-        ${row("rCAC", a.rCAC, null, m2, "WhatsApp spend per returning donor")}
-      </tbody></table></div>
-  </div>
-  <div class="sec">
-    <div class="eyebrow">Unit economics</div>
-    <h3>Why the model behaves the way it does</h3>
-    <div class="summary">
-      <div class="hl"><span class="eyebrow">Cost per first-pickup kg</span><b>${m3(a.cpkNew)}</b></div>
-      <div class="hl"><span class="eyebrow">Cost per returning kg</span><b>${m3(a.cpkRet)}</b></div>
-      <div><span class="eyebrow">New kg / pickup</span><b>${n1(a.kgNewAvg)}</b></div>
-      <div><span class="eyebrow">Returning kg / pickup</span><b>${n1(a.kgRetAvg)}</b></div>
-      <div><span class="eyebrow">New share of donors</span><b>${pc0(a.newShare)}</b></div>
-      <div><span class="eyebrow">New share of kilos</span><b>${pc0(a.newKgShare)}</b></div>
-    </div>
-    <div class="flag info"><b>Sources.</b> Donor counts, pools, return timing and kg per pickup: cohort analysis (253,599 donors, Jan 2024–Sep 2026,
-      phone-matched). Cost per new donor by channel: Supermetrics spend ÷ genuinely new phones, Aug–Sep 2026. City kg per pickup and
-      pickup rate: four-month medians from the MTD reporting workbook. nCAC and rCAC follow the definitions used on dashboard.awonksa.com.
-      Sutra is excluded, as on the live dashboard.</div>
-  </div>`;
+    <div class="card"><h2>${t("cityTitle")}</h2><p class="lead">${t("cityLead")}</p>
+      <div class="tbl"><table>
+        <thead><tr><th>${t("colCity")}</th><th>${t("colDrivers")}</th><th>${t("colDays")}</th><th>${t("colNewS")}</th><th>${t("colRetS")}</th>
+          <th>${t("colKg")}</th><th>${t("colSpendS")}</th><th>${t("colCpk")}</th><th>${t("colNeed")}</th></tr></thead>
+        <tbody>${rows}
+          <tr class="tot"><td>${t("total")}</td><td class="n">${n0(P.drivers)}</td><td></td><td class="n">${n0(P.newDonors)}</td>
+            <td class="n">${n0(P.retDonors)}</td><td class="n">${n0(P.weight)}</td><td class="n">${m0(P.spend)}</td>
+            <td class="n">${m3(P.cpk)}</td><td class="n">${n0(P.driversNeeded)}</td></tr>
+        </tbody></table></div>
+    </div>`;
 }
 
 function render(){
   compute();
-  renderTop();
-  renderNew(); renderRet(); renderCity(); renderOverhead(); renderBase();
-  renderPlan();
+  applyLang();
+  renderHero(); renderBudget(); renderRet(); renderCity(); renderPlan();
   scheduleScenarios();
 }
 
-// ---- events ----
-function rerenderKeeping(t, selector){
-  const raw = t.value; let pos = null;
-  try { pos = t.selectionStart; } catch(_){}
+// ================= events =================
+function rerenderKeeping(el, selector){
+  const raw = el.value; let pos = null;
+  try { pos = el.selectionStart; } catch(_){}
   render();
   const again = document.querySelector(selector);
   if(again){ again.value = raw; again.focus(); if(pos!==null){ try{ again.setSelectionRange(pos,pos); }catch(_){} } }
@@ -976,67 +893,66 @@ function rerenderKeeping(t, selector){
 const num = v => v === "" ? 0 : Number(v);
 
 document.addEventListener("input", e=>{
-  const t = e.target, d = t.dataset;
-  if(d.ch){
-    const c = channels.find(x=>x.id===d.ch); if(!c) return;
-    c[d.key] = num(t.value); rerenderKeeping(t, `[data-ch="${d.ch}"][data-key="${d.key}"]`);
-  } else if(d.city){
-    const c = cities.find(x=>x.id===Number(d.city)); if(!c) return;
-    c[d.key] = num(t.value); rerenderKeeping(t, `[data-city="${d.city}"][data-key="${d.key}"]`);
-  } else if(d.pool){
-    pools[d.pool] = num(t.value); rerenderKeeping(t, `[data-pool="${d.pool}"]`);
-  } else if(d.rate || d.rcac){
+  const x = e.target, d = x.dataset;
+  if(d.ch){ const c = channels.find(y=>y.id===d.ch); if(!c) return; c[d.key] = num(x.value); rerenderKeeping(x, `[data-ch="${d.ch}"][data-key="${d.key}"]`); }
+  else if(d.city){ const c = cities.find(y=>y.id===Number(d.city)); if(!c) return; c[d.key] = num(x.value); rerenderKeeping(x, `[data-city="${d.city}"][data-key="${d.key}"]`); }
+  else if(d.pool){ pools[d.pool] = num(x.value); rerenderKeeping(x, `[data-pool="${d.pool}"]`); }
+  else if(d.rate || d.rcac){
     if(st.preset !== "custom"){ PRESETS.custom = clone(PRESETS[st.preset]); PRESETS.custom.label = "Custom"; st.preset = "custom"; }
-    if(d.rate) PRESETS.custom.rate[d.rate] = num(t.value); else PRESETS.custom.rcac[d.rcac] = num(t.value);
-    rerenderKeeping(t, d.rate ? `[data-rate="${d.rate}"]` : `[data-rcac="${d.rcac}"]`);
-  } else if(d.set){
-    st[d.set] = num(t.value); rerenderKeeping(t, `[data-set="${d.set}"]`);
-  } else if(d.oh && t.tagName!=="SELECT"){
-    const r = overhead.find(x=>x.id===Number(d.oh)); if(!r) return;
-    r[d.key] = d.key==="item" ? t.value : num(t.value);
-    rerenderKeeping(t, `[data-oh="${d.oh}"][data-key="${d.key}"]`);
-  } else if(t.id==="tCPK"){ st.targetCPK = num(t.value); rerenderKeeping(t, "#tCPK"); }
-  else if(t.id==="tShare"){ st.targetNewShare = num(t.value); rerenderKeeping(t, "#tShare"); }
-  else if(t.id==="tDays"){ st.daysInMonth = num(t.value); rerenderKeeping(t, "#tDays"); }
-  else if(t.id==="monthLabel"){ st.monthLabel = t.value; document.getElementById("mastMonth").textContent = t.value; }
+    if(d.rate) PRESETS.custom.rate[d.rate] = num(x.value); else PRESETS.custom.rcac[d.rcac] = num(x.value);
+    rerenderKeeping(x, d.rate ? `[data-rate="${d.rate}"]` : `[data-rcac="${d.rcac}"]`);
+  }
+  else if(d.set){ st[d.set] = num(x.value); rerenderKeeping(x, `[data-set="${d.set}"]`); }
+  else if(d.oh && x.tagName !== "SELECT"){
+    const r = overhead.find(y=>y.id===Number(d.oh)); if(!r) return;
+    r[d.key] = d.key==="item" ? x.value : num(x.value); rerenderKeeping(x, `[data-oh="${d.oh}"][data-key="${d.key}"]`);
+  }
+  else if(x.id==="tCPK"){ st.targetCPK = num(x.value); rerenderKeeping(x, "#tCPK"); }
+  else if(x.id==="tShare"){ st.targetNewShare = num(x.value); rerenderKeeping(x, "#tShare"); }
+  else if(x.id==="monthLabel"){ st.monthLabel = x.value; }
 });
 
 document.addEventListener("change", e=>{
-  const t = e.target, d = t.dataset;
-  if(d.lever){ st.levers[d.lever] = t.checked; render(); }
-  if(d.oh && t.tagName==="SELECT"){ const r = overhead.find(x=>x.id===Number(d.oh)); if(r){ r.type = t.value; render(); } }
+  const x = e.target, d = x.dataset;
+  if(d.oh && x.tagName==="SELECT"){ const r = overhead.find(y=>y.id===Number(d.oh)); if(r){ r.type = x.value; render(); } }
 });
 
 function applyA(){
   const A = solveMaxKgAtCPK(cities, channels, st, pools, ohAwon());
-  A.channels.forEach(c=>{ const x = channels.find(y=>y.id===c.id); if(x) x.spend = c.spend; });
+  A.channels.forEach(c=>{ const y = channels.find(z=>z.id===c.id); if(y) y.spend = c.spend; });
   render();
-  toast(`Optimised: ${n0(A.plan.newDonors)} new, ${n0(A.plan.retDonors)} returning, ${n0(A.plan.weight)} kg at ${m3(A.plan.cpk)}/kg.`);
+  toast(t("toastOpt", n0(A.plan.weight), m3(A.plan.cpk)));
+}
+function setLang(l){
+  lang = l;
+  try { history.replaceState(null, "", "#" + l); } catch(_){}
+  try { localStorage.setItem("awonLang", l); } catch(_){}
+  render();
 }
 
 document.addEventListener("click", e=>{
-  const t = e.target, d = t.dataset;
-  if(d.preset){ st.preset = d.preset; render(); }
-  if(t.id==="applyA" || t.id==="optBtn") applyA();
-  if(t.id==="augBtn"){
-    channels = clone(CHANNELS_BASE); st.preset = "baseline";
-    st.levers = { exclude:false, snapRefresh:false, fast:false, capi:false };
-    render(); toast("Reset to August's spends and reactivation rate.");
-  }
-  if(t.id==="addOh"){ overhead.push({id:Date.now(), type:"Other", item:"New cost line", total:0, awonPct:0.85}); render(); }
+  const x = e.target.closest("button,[data-lever],[data-tab]") || e.target, d = x.dataset;
+  if(d.lang){ setLang(d.lang); return; }
+  if(d.lever){ st.levers[d.lever] = !st.levers[d.lever]; render(); return; }
+  if(d.preset){ st.preset = d.preset; render(); return; }
+  if(x.id==="optBtn") applyA();
+  if(x.id==="augBtn"){ channels = clone(CHANNELS_BASE); st.preset = "baseline"; st.levers = { exclude:false, snapRefresh:false, fast:false, capi:false }; render(); toast(t("toastAug")); }
+  if(x.id==="addOh"){ overhead.push({ id:Date.now(), type:"Other", item:"", total:0, awonPct:0.85 }); render(); }
   if(d.ohrm){ overhead = overhead.filter(r=>r.id!==Number(d.ohrm)); render(); }
-  if(t.classList.contains("tab")){
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
-    document.getElementById("panel-"+d.tab).classList.add("on");
+  if(d.tab){
+    document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b===x));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on", p.id==="panel-"+d.tab));
   }
-  if(t.id==="exportBtn") exportExcel();
+  if(x.id==="exportBtn") exportExcel();
+});
+document.addEventListener("keydown", e=>{
+  if((e.key===" "||e.key==="Enter") && e.target.dataset && e.target.dataset.lever){ e.preventDefault(); e.target.click(); }
 });
 
 function toast(msg){
   const el = document.getElementById("toast");
   el.textContent = msg; el.style.display = "block";
-  setTimeout(()=>{ el.style.display = "none"; }, 6000);
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ el.style.display = "none"; }, 4000);
 }
 
 // ==== EXPORT START =========================================================
@@ -1150,12 +1066,12 @@ async function exportExcel(){
     const nc  = wb.addWorksheet(NC, { views:[{ state:"frozen", ySplit:5 }] });
     const as  = wb.addWorksheet(AS);
     const oa  = wb.addWorksheet(OA, { views:[{ state:"frozen", ySplit:4 }] });
-    const bl  = wb.addWorksheet("August Baseline");
+    const bl  = wb.addWorksheet("September Baseline");
     const rm  = wb.addWorksheet("Read Me");
 
     /* ---------------- Assumptions ---------------- */
     as.columns = [{width:40},{width:16},{width:16},{width:14},{width:14},{width:16},{width:16},{width:14},{width:60}];
-    styleTitle(as, "A1:I1", `ASSUMPTIONS & TARGETS — ${ML.toUpperCase()}`, `Generated ${stamp}  ·  shaded cells are inputs and drive every other sheet`);
+    styleTitle(as, "A1:I1", `ASSUMPTIONS & TARGETS · ${ML.toUpperCase()}`, `Generated ${stamp}  ·  shaded cells are inputs and drive every other sheet`);
     sectionHead(as, 4, "A", "C", "TARGETS");
     put(as, "A5", "Target cost per kg", { align:"left", bold:true }); put(as, "B5", st.targetCPK, { fill:INPUT_FILL, numFmt:NF.money3, bold:true });
     put(as, "A6", "Target new-donor share", { align:"left", bold:true }); put(as, "B6", st.targetNewShare, { fill:INPUT_FILL, numFmt:NF.pct, bold:true });
@@ -1163,7 +1079,7 @@ async function exportExcel(){
     [["Days in month", st.daysInMonth, NF.num, "Calendar days; operating days are set per city"],
      ["Share of donor base in served cities", st.served, NF.pct, "Donors whose last city is no longer served are excluded"],
      ["First-pickup kg ÷ returning kg", st.kgRatio, '0.00', "Cohorts: ~24.5 kg first pickup vs ~19 kg returning"],
-     ["New share when city kg was measured", st.baseNewShare, NF.pct, "Aug 2026; splits each city's blended kg into new and returning"],
+     ["New share when city kg was measured", st.baseNewShare, NF.pct, "Aug-Sep 2026; splits each city's kg per pickup into new and returning"],
      ["Cost-per-new-donor elasticity", st.elasticity, '0.00', "CPND moves with (spend ÷ reference)^elasticity"],
      ["Max pickups per driver per day", st.maxPPD, NF.num, "The old plan's own capacity assumption"],
      ["Paid cost factor (audience exclusion)", st.levers.exclude ? 0.85 : 1, '0.00', st.levers.exclude ? "Existing donors excluded from paid: 15% cheaper per new donor" : "No exclusion"],
@@ -1173,14 +1089,14 @@ async function exportExcel(){
         as.getCell("C"+R).value = n; as.getCell("C"+R).font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; });
     as.mergeCells("C9:I9"); for(let r=10;r<=16;r++) as.mergeCells(`C${r}:I${r}`);
 
-    const { aug, A, B, C: Cs, req, steps } = SC;
-    sectionHead(as, 18, "A", "I", "SCENARIOS — THE THREE TARGETS TESTED TOGETHER");
+    const { base: aug, A, B, C: Cs, req, steps } = SC;
+    sectionHead(as, 18, "A", "I", "SCENARIOS: THE THREE TARGETS TESTED TOGETHER");
     headerRow(as, 19, { A:"Scenario", B:"Kilos", C:"Cost per kg", D:"New share", E:"New donors", F:"Returning donors", G:"Spend", H:"Drivers needed", I:"Verdict" }, BRAND);
     const scen = [
       ["A · Most kilos at target cost per kg (recommended)", A.plan, "Meets cost per kg; new share below target because returning grows faster"],
       ["B · Both ratio targets", B ? B.plan : null, B ? `Meets both ratios only by cutting returning to ${pc0(B.returnScale)} of plan and collecting ${n0(B.plan.weight)} kg` : "Infeasible"],
       ["C · Target new share with maximum returning", Cs.plan, Cs.capped ? `Every channel at ceiling reaches only ${pc(Cs.plan.newShare)}; cost per kg ${m3(Cs.plan.cpk)}` : `Cost per kg ${m3(Cs.plan.cpk)}`],
-      ["August run-rate (reference)", aug, "Reconstructs August: 5.9K new, 13.0K returning"]
+      ["September run-rate (reference)", aug, "Reproduces September: 5.1K new, 12.4K returning"]
     ];
     scen.forEach(([l,p,v],i)=>{ const R = 20+i, wash = i%2 ? BRAND_WASH : null;
       put(as, "A"+R, l, { align:"left", bold:true, fill: i===0 ? "FFE3F0E8" : wash });
@@ -1197,10 +1113,10 @@ async function exportExcel(){
     });
     put(as, "A25", "nCAC needed to hit both ratios at maximum returning", { align:"left", bold:true });
     put(as, "B25", req.ncac, { numFmt:NF.money2, bold:true, colour:RED_BAD });
-    as.getCell("C25").value = `vs ${m2(aug.nCAC)} in August and ${m2(A.plan.nCAC)} in plan A, for ${n0(req.N)} new donors`;
+    as.getCell("C25").value = `vs ${m2(aug.nCAC)} in September and ${m2(A.plan.nCAC)} in plan A, for ${n0(req.N)} new donors`;
     as.getCell("C25").font = { name:FONT, size:9, italic:true, color:{argb:DIM} }; as.mergeCells("C25:I25");
 
-    sectionHead(as, 27, "A", "I", "FROM AUGUST TO PLAN A — ONE CHANGE AT A TIME");
+    sectionHead(as, 27, "A", "I", "FROM SEPTEMBER TO PLAN A, ONE CHANGE AT A TIME");
     headerRow(as, 28, { A:"Step", B:"Kilos", C:"Change", D:"Cost per kg", E:"New donors", F:"Returning donors", G:"Spend" }, BRAND);
     steps.forEach((s,i)=>{ const R = 29+i, wash = i%2 ? BRAND_WASH : null;
       put(as, "A"+R, s.label, { align:"left", bold:true, fill:wash });
@@ -1214,7 +1130,7 @@ async function exportExcel(){
 
     /* ---------------- New Donor Channels ---------------- */
     nc.columns = [{width:40},{width:11},{width:13},{width:13},{width:12},{width:12},{width:14},{width:13},{width:14},{width:13},{width:12}];
-    styleTitle(nc, "A1:K1", `NEW DONOR CHANNELS — ${ML.toUpperCase()}`,
+    styleTitle(nc, "A1:K1", `NEW DONOR CHANNELS · ${ML.toUpperCase()}`,
       "Cost per new donor = spend ÷ genuinely new phones (Aug–Sep 2026).  Scaling channels: effective CPND = base × lever factor × (spend ÷ reference)^elasticity");
     bandRow(nc, 4, [["C","F","INPUTS"],["G","K","CALCULATED"]], BRAND);
     headerRow(nc, 5, { A:"Channel", B:"Type", C:"Spend $", D:"Reference spend", E:"Base CPND $", F:"Lever factor",
@@ -1276,9 +1192,9 @@ async function exportExcel(){
     /* ---------------- Returning Pools ---------------- */
     rp.columns = [{width:24},{width:14},{width:14},{width:13},{width:13},{width:13},{width:13},{width:14},{width:14},{width:12},{width:12}];
     const pr = PRESETS[st.preset];
-    styleTitle(rp, "A1:K1", `RETURNING DONORS — ${ML.toUpperCase()}`,
+    styleTitle(rp, "A1:K1", `RETURNING DONORS · ${ML.toUpperCase()}`,
       `Program: ${pr.label}.  Returning donors = pool × share of base × served share × monthly return rate × city repeat index`);
-    sectionHead(rp, 4, "A", "D", `REACTIVATION PROGRAM — ${pr.label.toUpperCase()}`);
+    sectionHead(rp, 4, "A", "D", `REACTIVATION PROGRAM: ${pr.label.toUpperCase()}`);
     headerRow(rp, 5, { A:"Segment", B:"Pool, all cities", C:"Monthly return rate", D:"rCAC $" }, BRAND);
     SEGMENTS.forEach((s,i)=>{ const R = 6+i;
       put(rp, "A"+R, s.label, { align:"left", bold:true });
@@ -1322,7 +1238,7 @@ async function exportExcel(){
 
     /* ---------------- Overhead Allocation ---------------- */
     oa.columns = [{width:26},{width:34},{width:14},{width:13},{width:14},{width:14}];
-    styleTitle(oa, "A1:F1", "MARKETING OVERHEAD — SHARED COST POOL", `${ML}  ·  only the Awon share enters this forecast`);
+    styleTitle(oa, "A1:F1", "MARKETING OVERHEAD: SHARED COST POOL", `${ML}  ·  only the Awon share enters this forecast`);
     headerRow(oa, 4, { A:"Cost type", B:"Line item", C:"Budget", D:"Awon share %", E:"Awon $", F:"Sutra $" }, BRAND);
     overhead.forEach((o,i)=>{ const R = 5+i, wash = i%2 ? BRAND_WASH : null;
       put(oa, "A"+R, o.type, { fill:INPUT_FILL, align:"left" }); put(oa, "B"+R, o.item, { fill:INPUT_FILL, align:"left" });
@@ -1345,8 +1261,8 @@ async function exportExcel(){
                   {width:9},{width:9},{width:11},{width:12},{width:11},{width:11},{width:12},{width:12},{width:14},{width:13},
                   {width:11},{width:11},{width:11},{width:11},{width:11},{width:11},{width:3},
                   {width:11},{width:11},{width:13},{width:11}];
-    styleTitle(ws, "A1:AM1", `AWON — ${ML.toUpperCase()} FORECAST`,
-      `Generated ${stamp}  ·  new & returning donor model  ·  shaded cells are inputs, everything else is a live formula  ·  targets: ${m2(st.targetCPK)}/kg, ${pc0(st.targetNewShare)} new`);
+    styleTitle(ws, "A1:AM1", `AWON · ${ML.toUpperCase()} FORECAST`,
+      `Generated ${stamp}  ·  new & returning donor model, anchored on September 2026  ·  shaded cells are inputs, everything else is a live formula  ·  targets: ${m2(st.targetCPK)}/kg, ${pc0(st.targetNewShare)} new`);
     bandRow(ws, 4, [["C","G","DONORS"],["H","O","NEW DONORS"],["P","Q","RETURNING"],["S","AH","LOGISTICS & EFFICIENCY"],["AJ","AM","CITY INPUTS"]], BRAND);
     headerRow(ws, 5, { A:"Initiative", B:"City", C:"Monthly Budget", D:"Total Donors / Month", E:"New Donors", F:"Returning Donors", G:"New Share",
       H:"Paid Budget", I:"Paid New Donors", J:"Partner Budget", K:"Partner New Donors", L:"Organic & WA Budget", M:"Organic & WA New Donors",
@@ -1422,8 +1338,6 @@ async function exportExcel(){
     TD("AH"+TOT, F(`IFERROR(C${TOT}/D${TOT},0)`, div(P.direct,P.pickups)), NF.money2);
     ["AL","AM"].forEach(c=>TD(c+TOT, "", NF.num));
     ws.getRow(TOT).height = 20;
-    ws.pageSetup = { orientation:"landscape", paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
-                     margins:{ left:0.3, right:0.3, top:0.4, bottom:0.4, header:0.2, footer:0.2 } };
 
     // Now that the total row is known, point channel kg at the forecast's average new kg/pickup
     nc.eachRow(row=>row.eachCell(cell=>{
@@ -1433,7 +1347,7 @@ async function exportExcel(){
 
     // Executive summary
     let E0 = TOT + 3;
-    sectionHead(ws, E0, "A", "G", "EXECUTIVE SUMMARY — AGAINST TARGET");
+    sectionHead(ws, E0, "A", "F", "EXECUTIVE SUMMARY AGAINST TARGET");
     const exec = [
       ["Target cost per kg", A_(AR.cpk), st.targetCPK, NF.money3],
       ["Forecast cost per kg (all-in)", `IFERROR((C${TOT}+${OH})/AA${TOT},0)`, P.cpk, NF.money3, "cpk"],
@@ -1443,37 +1357,36 @@ async function exportExcel(){
       ["Returning donors", `F${TOT}`, P.retDonors, NF.num],
       ["Total pickups", `U${TOT}`, P.pickups, NF.num],
       ["Target weight (kg)", `AA${TOT}`, P.weight, NF.num],
-      ["— from new donors", `Y${TOT}`, P.kgNewTot, NF.num],
-      ["— from returning donors", `Z${TOT}`, P.kgRetTot, NF.num],
+      ["  From new donors", `Y${TOT}`, P.kgNewTot, NF.num],
+      ["  From returning donors", `Z${TOT}`, P.kgRetTot, NF.num],
       ["Direct marketing budget", `C${TOT}`, P.direct, NF.money],
-      ["— new-donor budget", `N${TOT}`, P.newSpend, NF.money],
-      ["— WhatsApp reactivation", `P${TOT}`, P.waSpend, NF.money],
+      ["  New-donor budget", `N${TOT}`, P.newSpend, NF.money],
+      ["  WhatsApp reactivation", `P${TOT}`, P.waSpend, NF.money],
       ["Marketing overhead (Awon share)", OH, P.overhead, NF.money],
       ["Total spending", `C${TOT}+${OH}`, P.spend, NF.money],
-      ["nCAC — (paid + organic) ÷ new donors", `O${TOT}`, P.nCAC, NF.money2],
-      ["rCAC — WhatsApp spend ÷ returning donors", `Q${TOT}`, P.rCAC, NF.money2],
+      ["nCAC: (paid + organic) ÷ new donors", `O${TOT}`, P.nCAC, NF.money2],
+      ["rCAC: WhatsApp spend ÷ returning donors", `Q${TOT}`, P.rCAC, NF.money2],
       ["Cost per first-pickup kg", `IFERROR(N${TOT}/Y${TOT},0)`, P.cpkNew, NF.money3],
       ["Cost per returning kg", `IFERROR(P${TOT}/Z${TOT},0)`, P.cpkRet, NF.money3],
       ["Drivers on roster", `S${TOT}`, P.drivers, NF.num],
       ["Drivers needed", `AE${TOT}`, P.driversNeeded, NF.num, "drv"]
     ];
     exec.forEach(([l,f,v,fmt,flag],i)=>{ const R = E0+1+i, wash = i%2 ? BRAND_WASH : null;
-      ws.mergeCells(`A${R}:D${R}`);
-      put(ws, "A"+R, l, { align:"left", fill:wash, bold: !l.startsWith("—") });
+      ws.mergeCells(`A${R}:B${R}`);
+      put(ws, "A"+R, l, { align:"left", fill:wash, bold: !l.startsWith("  ") });
       let colour = INK;
       if(flag==="cpk") colour = v <= st.targetCPK+1e-6 ? GREEN_OK : RED_BAD;
       if(flag==="share") colour = v >= st.targetNewShare-1e-6 ? GREEN_OK : RED_BAD;
       if(flag==="drv") colour = v <= P.drivers ? GREEN_OK : RED_BAD;
-      put(ws, "E"+R, F(f, v), { numFmt:fmt, bold:true, colour, fill:wash });
-      if(flag){ ws.mergeCells(`F${R}:G${R}`); }
-      if(flag==="cpk") put(ws, "F"+R, F(`IF(E${R}<=E${R-1},"On target","Above target")`, v<=st.targetCPK+1e-6?"On target":"Above target"), { align:"left", bold:true, colour, fill:wash });
-      if(flag==="share") put(ws, "F"+R, F(`IF(E${R}>=E${R-1},"On target","Below target")`, v>=st.targetNewShare-1e-6?"On target":"Below target"), { align:"left", bold:true, colour, fill:wash });
-      if(flag==="drv") put(ws, "F"+R, F(`IF(E${R}<=E${R-1},"Covered","Short "&(E${R}-E${R-1}))`, v<=P.drivers?"Covered":"Short "+(v-P.drivers)), { align:"left", bold:true, colour, fill:wash });
+      put(ws, "C"+R, F(f, v), { numFmt:fmt, bold:true, colour, fill:wash });
+      if(flag==="cpk") put(ws, "D"+R, F(`IF(C${R}<=C${R-1},"On target","Above target")`, v<=st.targetCPK+1e-6?"On target":"Above target"), { align:"left", bold:true, colour, fill:wash });
+      if(flag==="share") put(ws, "D"+R, F(`IF(C${R}>=C${R-1},"On target","Below target")`, v>=st.targetNewShare-1e-6?"On target":"Below target"), { align:"left", bold:true, colour, fill:wash });
+      if(flag==="drv") put(ws, "D"+R, F(`IF(C${R}<=C${R-1},"Covered","Short "&(C${R}-C${R-1}))`, v<=P.drivers?"Covered":"Short "+(v-P.drivers)), { align:"left", bold:true, colour, fill:wash });
     });
 
     // City spend with overhead on driver share
     let C0 = E0 + exec.length + 3;
-    sectionHead(ws, C0, "A", "J", "CITY SPEND — DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE");
+    sectionHead(ws, C0, "A", "J", "CITY SPEND: DIRECT BUDGET PLUS OVERHEAD ON DRIVER SHARE");
     headerRow(ws, C0+1, { A:"City", B:"Drivers", C:"Driver share", D:"Direct budget", E:"Overhead carried", F:"City spend",
       G:"Kilos", H:"CPK (all-in)", I:"New share", J:"vs target CPK" }, BRAND);
     P.rows.forEach((c,i)=>{ const R = C0+2+i, src = H0+i, wash = i%2 ? BRAND_WASH : null;
@@ -1501,18 +1414,18 @@ async function exportExcel(){
     put(ws, "I"+CT, F(`G${TOT}`, P.newShare), { ...dk, numFmt:NF.pct });
     put(ws, "J"+CT, F(`H${CT}-${A_(AR.cpk)}`, P.cpk-st.targetCPK), { ...dk, numFmt:'+$0.000;-$0.000;"–"' });
 
-    /* ---------------- August Baseline ---------------- */
-    const a = SC.aug;
-    bl.columns = [{width:30},{width:15},{width:15},{width:12},{width:60}];
-    styleTitle(bl, "A1:E1", "AUGUST 2026 — DOES THE MODEL REPRODUCE IT?", "August spends, no levers, calibrated reactivation rates — against what August actually did");
+    /* ---------------- September Baseline ---------------- */
+    const a = SC.base;
+    bl.columns = [{width:30},{width:15},{width:15},{width:12},{width:64}];
+    styleTitle(bl, "A1:E1", "SEPTEMBER 2026: DOES THE MODEL REPRODUCE IT?", "September spends, no levers, run-rate reactivation, against September projected from 1-25 Sep (21 of 26 operating days)");
     headerRow(bl, 4, { A:"Measure", B:"Model", C:"Actual", D:"Gap", E:"Actual from" }, BRAND);
-    [["New donors", a.newDonors, AUG_ACTUAL.newDonors, NF.num, "Cohort analysis, phone-matched across Odoo and legacy data"],
-     ["Returning donors", a.retDonors, AUG_ACTUAL.retDonors, NF.num, "Cohort analysis"],
-     ["New share", a.newShare, AUG_ACTUAL.newDonors/(AUG_ACTUAL.newDonors+AUG_ACTUAL.retDonors), NF.pct, "Cohort analysis"],
-     ["Kilos", a.weight, AUG_ACTUAL.kgFull, NF.num, "MTD tab: 293,696 kg over 19 of 27 operating days, pro-rated"],
-     ["Spend", a.spend, AUG_ACTUAL.spendFull, NF.money, "MTD tab: $68,447 over 23 of 31 days, pro-rated"],
-     ["Cost per kg", a.cpk, AUG_ACTUAL.spendFull/AUG_ACTUAL.kgFull, NF.money3, "Derived"],
-     ["nCAC", a.nCAC, null, NF.money2, "Paid-only cost per genuinely new donor was $28 in Aug–Sep"],
+    [["New donors", a.newDonors, BASE_ACTUAL.newDonors, NF.num, "Odoo pickups, split with the cohort analysis (71% returning, 1-20 Sep)"],
+     ["Returning donors", a.retDonors, BASE_ACTUAL.retDonors, NF.num, "As above"],
+     ["New share", a.newShare, BASE_ACTUAL.newDonors/(BASE_ACTUAL.newDonors+BASE_ACTUAL.retDonors), NF.pct, "As above"],
+     ["Kilos", a.weight, BASE_ACTUAL.kgOdoo, NF.num, "Odoo received orders: 304,173 kg over 1-25 Sep, projected"],
+     ["Paid platform spend", a.paidSpend, BASE_ACTUAL.paidSpend, NF.money, "Supermetrics, 1-20 Sep, projected to 30 days"],
+     ["Cost per kg", a.cpk, null, NF.money3, "Full September spend not yet closed; see dashboard.awonksa.com"],
+     ["nCAC", a.nCAC, null, NF.money2, "Paid-only cost per genuinely new donor was $28 in Aug-Sep"],
      ["rCAC", a.rCAC, null, NF.money2, "WhatsApp spend per returning donor"],
      ["Cost per first-pickup kg", a.cpkNew, null, NF.money3, "New-donor spend ÷ first-pickup kilos"],
      ["Cost per returning kg", a.cpkRet, null, NF.money3, "WhatsApp spend ÷ returning kilos"]]
@@ -1520,16 +1433,16 @@ async function exportExcel(){
         put(bl, "A"+R, l, { align:"left", bold:true, fill:wash });
         put(bl, "B"+R, m, { numFmt:f, fill:wash });
         put(bl, "C"+R, act===null ? "" : act, { numFmt:f, fill:wash });
-        put(bl, "D"+R, act===null ? "" : F(`IFERROR(B${R}/C${R}-1,0)`, m/act-1), { numFmt:'+0.0%;-0.0%;"–"', fill:wash });
+        put(bl, "D"+R, act===null ? "" : F(`IFERROR(B${R}/C${R}-1,0)`, m/act-1), { numFmt:'+0.0%;-0.0%;"-"', fill:wash });
         put(bl, "E"+R, src, { align:"left", fill:wash });
       });
 
     /* ---------------- Read Me ---------------- */
     rm.columns = [{width:4},{width:120}];
-    styleTitle(rm, "A1:B1", `MODEL NOTES — AWON ${ML.toUpperCase()} FORECAST, NEW & RETURNING DONORS`, `Generated ${stamp}`);
+    styleTitle(rm, "A1:B1", `MODEL NOTES · AWON ${ML.toUpperCase()} FORECAST, NEW & RETURNING DONORS`, `Generated ${stamp}`);
     const lines = [
       ["h","How to read this workbook"],
-      ["p",`'${mainName}' keeps the old forecast's shape — one row per city, a total row, an executive summary and city spend with overhead — but splits every donor, kilo and dollar into new and returning.`],
+      ["p",`'${mainName}' keeps the old forecast's shape (one row per city, a total row, an executive summary and city spend with overhead) but splits every donor, kilo and dollar into new and returning.`],
       ["p","Shaded cells are inputs. Every other number is a live formula, so changing a channel's spend, a return rate or a city's driver count recalculates the whole month."],
       ["k","Shaded cells are inputs. White cells are formulas. Dark rows are totals. Green / red marks on-target / off-target."],
       ["h","Definitions (same as dashboard.awonksa.com)"],
@@ -1538,17 +1451,17 @@ async function exportExcel(){
       ["p","nCAC = (paid + organic spend) ÷ new donors.   rCAC = WhatsApp spend ÷ returning donors."],
       ["h","How new donors are forecast"],
       ["p","Each channel converts spend into new donors at its own cost per genuinely new donor, measured Aug–Sep 2026: Google $18.50, Snapchat $34, Meta $215, TikTok $138."],
-      ["p","Channels get dearer as spend rises: effective cost per new donor = base × lever factor × (spend ÷ August spend) ^ elasticity. This is why the optimiser stops adding to Google rather than moving everything there."],
+      ["p","Channels get dearer as spend rises: effective cost per new donor = base × lever factor × (spend ÷ average Aug-Sep spend) ^ elasticity. This is why the optimiser stops adding to Google rather than moving everything there."],
       ["p","Paid new donors land in cities by the old forecast's paid-budget split. Partner, organic and WhatsApp-new donors land by each city's share of the donor base."],
       ["h","How returning donors are forecast"],
       ["p","From the donor base on 20 Sep 2026, by recency: active (≤90 days), due (91–180), lapsing (181–365), dormant (365+). Each segment returns at a monthly rate and costs an rCAC."],
-      ["p","The August run-rate is calibrated to reproduce August: 13.0K returning on about $11.2K of WhatsApp. Always-on and maximum raise the return rate on due, lapsing and dormant donors. Active donors are left alone."],
+      ["p","The September run-rate is calibrated to reproduce September: about 12.4K returning donors. Always-on and maximum raise the return rate on due, lapsing and dormant donors. Active donors are left alone."],
       ["p","Each city's returning volume is its share of the base times a repeat index. Makkah repeats at half the rate of Riyadh and Jeddah over twelve months, so its index is 0.53."],
       ["h","Kilos"],
-      ["p","Each city's measured kg per pickup (four-month median) is split into new and returning using the cohort ratio: first pickups run ~1.29× a returning pickup."],
+      ["p","Each city's kg per pickup (Odoo received orders, Aug-Sep 2026) is split into new and returning using the cohort ratio: first pickups run about 1.29× a returning pickup."],
       ["h","The October targets"],
-      ["p",`Plan A hits ${m2(st.targetCPK)} per kg and collects the most kilos it can. It grows new donors ${pc0(div(A.plan.newDonors,aug.newDonors)-1)} on August but reaches a ${pc0(A.plan.newShare)} new share, because returning donors grow faster.`],
-      ["p",`Hitting ${pc0(st.targetNewShare)} new and ${m2(st.targetCPK)} together requires either an nCAC of ${m2(req.ncac)} (August: ${m2(aug.nCAC)}), or switching off part of the reactivation program and collecting fewer kilos. See the Assumptions sheet.`],
+      ["p",`Plan A hits ${m2(st.targetCPK)} per kg and collects the most kilos it can. It grows new donors ${pc0(div(A.plan.newDonors,aug.newDonors)-1)} on September but reaches a ${pc0(A.plan.newShare)} new share, because returning donors grow faster.`],
+      ["p",`Hitting ${pc0(st.targetNewShare)} new and ${m2(st.targetCPK)} together requires either an nCAC of ${m2(req.ncac)} (September: ${m2(aug.nCAC)}), or switching off part of the reactivation program and collecting fewer kilos. See the Assumptions sheet.`],
       ["p","Recommendation: keep the cost-per-kg target, and set acquisition as a volume target (new donors) rather than a share."],
       ["h","Assumptions to watch"],
       ["p","Partner channel: co-branded partner acquisition at ALDERAYEA's historical ~$12 per new donor, capped at its historical ~1,500 a month. It is not running today."],
@@ -1556,7 +1469,7 @@ async function exportExcel(){
       ["p","Exclusion audiences: modelled as 15% cheaper new donors on every paid platform."],
       ["p","Fleet: drivers needed assumes at most the pickups-per-day setting and never more kilos than car capacity."],
       ["p","Sutra is excluded, as on the live dashboard."],
-      ["p","Sources: cohort analysis (253,599 donors, phone-matched, Jan 2024–Sep 2026); Supermetrics platform spend; Awon MTD & Daily Reporting workbook; _Forecast_2024-2026.xlsx."]
+      ["p","Sources: Odoo received orders (Aug and 1-25 Sep 2026); cohort analysis (253,599 donors, phone-matched, Jan 2024 to Sep 2026); Supermetrics platform spend; _Forecast_2024-2026.xlsx."]
     ];
     let rr = 4;
     lines.forEach(([kind,text])=>{
@@ -1575,7 +1488,7 @@ async function exportExcel(){
     link.href = url; link.download = `Awon_${ML.replace(/\s+/g,"_")}_Forecast_New_Returning.xlsx`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
     setTimeout(()=>URL.revokeObjectURL(url), 2000);
-    toast("Downloaded " + link.download);
+    toast(t("downloaded") + " · " + link.download);
   } catch(err){
     console.error(err); toast("Export failed: " + err.message);
   }
@@ -1583,10 +1496,12 @@ async function exportExcel(){
 // ==== EXPORT END ===========================================================
 
 document.getElementById("wordmark").src = "data:image/png;base64," + WORDMARK;
-// Open on the optimised October plan
 (function init(){
+  let l = (location.hash || "").replace("#","");
+  if(l !== "ar" && l !== "en"){ try { l = localStorage.getItem("awonLang") || "en"; } catch(_){ l = "en"; } }
+  lang = l === "ar" ? "ar" : "en";
   const A0 = solveMaxKgAtCPK(cities, channels, st, pools, ohAwon());
-  A0.channels.forEach(c=>{ const x = channels.find(y=>y.id===c.id); if(x) x.spend = c.spend; });
+  A0.channels.forEach(c=>{ const y = channels.find(z=>z.id===c.id); if(y) y.spend = c.spend; });
   render();
 })();
 </script>
